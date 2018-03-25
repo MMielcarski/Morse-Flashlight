@@ -1,6 +1,6 @@
 <<<<<<< HEAD
 #include "morse.h"
-// git testtttttt
+// git test 2
 int main(void)
 {
 	int menu = 0;
