@@ -1,0 +1,564 @@
+   1               		.file	"main.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.rodata.str1.1,"aMS",@progbits,1
+  11               	.LC0:
+  12 0000 4F70 636A 		.string	"Opcje:  "
+  12      653A 2020 
+  12      00
+  13               	.LC1:
+  14 0009 4E61 6461 		.string	"Nadaj   "
+  14      6A20 2020 
+  14      00
+  15               	.LC2:
+  16 0012 6E61 6461 		.string	"nadaj   "
+  16      6A20 2020 
+  16      00
+  17               	.LC3:
+  18 001b 7779 7377 		.string	"wyswietl"
+  18      6965 746C 
+  18      00
+  19               	.LC4:
+  20 0024 726F 7A73 		.string	"rozszyf."
+  20      7A79 662E 
+  20      00
+  21               	.LC5:
+  22 002d 7072 6564 		.string	"predkosc"
+  22      6B6F 7363 
+  22      00
+  23               	.LC6:
+  24 0036 7377 5F65 		.string	"sw_err"
+  24      7272 00
+  25               		.section	.text.startup,"ax",@progbits
+  26               	.global	main
+  28               	main:
+  29               	.LFB11:
+  30               		.file 1 "src/main.c"
+   1:src/main.c    **** #include "morse.h"
+   2:src/main.c    **** 
+   3:src/main.c    **** int main(void)
+   4:src/main.c    **** {
+  31               		.loc 1 4 0
+  32               		.cfi_startproc
+  33               	/* prologue: function */
+  34               	/* frame size = 0 */
+  35               	/* stack size = 0 */
+  36               	.L__stack_usage = 0
+  37               	.LVL0:
+   5:src/main.c    **** 	int menu = 0;		//
+   6:src/main.c    **** 	int btn = 0;		// enc button state toggle (entering option)
+   7:src/main.c    **** 	int menuEnc = 0;	// selecting option in menu
+   8:src/main.c    **** 
+   9:src/main.c    **** 	initializeSetup();
+  38               		.loc 1 9 0
+  39 0000 0E94 0000 		call initializeSetup
+  40               	.LVL1:
+   7:src/main.c    **** 
+  41               		.loc 1 7 0
+  42 0004 E12C      		mov r14,__zero_reg__
+  43 0006 F12C      		mov r15,__zero_reg__
+   6:src/main.c    **** 	int menuEnc = 0;	// selecting option in menu
+  44               		.loc 1 6 0
+  45 0008 00E0      		ldi r16,0
+  46 000a 10E0      		ldi r17,0
+   5:src/main.c    **** 	int menu = 0;		//
+  47               		.loc 1 5 0
+  48 000c C0E0      		ldi r28,0
+  49 000e D0E0      		ldi r29,0
+  10:src/main.c    **** 
+  11:src/main.c    **** 	while(1)
+  12:src/main.c    **** 	{
+  13:src/main.c    **** 	readEncoderCounter();
+  14:src/main.c    **** 
+  15:src/main.c    **** 	if(btn == 0)		//enc button not pressed
+  16:src/main.c    **** 	{
+  17:src/main.c    **** 		if(encoderCount < 0) encoderCount = 0;	//reaching the end
+  18:src/main.c    **** 		if(encoderCount > 3) encoderCount = 3;	// of the menu
+  50               		.loc 1 18 0
+  51 0010 83E0      		ldi r24,lo8(3)
+  52 0012 C82E      		mov r12,r24
+  53 0014 D12C      		mov r13,__zero_reg__
+  54               	.LVL2:
+  55               	.L2:
+  13:src/main.c    **** 
+  56               		.loc 1 13 0
+  57 0016 0E94 0000 		call readEncoderCounter
+  58               	.LVL3:
+  15:src/main.c    **** 	{
+  59               		.loc 1 15 0
+  60 001a 0115      		cp r16,__zero_reg__
+  61 001c 1105      		cpc r17,__zero_reg__
+  62 001e 01F4      		brne .L3
+  63               	.LVL4:
+  17:src/main.c    **** 		if(encoderCount > 3) encoderCount = 3;	// of the menu
+  64               		.loc 1 17 0
+  65 0020 8091 0000 		lds r24,encoderCount
+  66 0024 9091 0000 		lds r25,encoderCount+1
+  67 0028 97FF      		sbrs r25,7
+  68 002a 00C0      		rjmp .L4
+  17:src/main.c    **** 		if(encoderCount > 3) encoderCount = 3;	// of the menu
+  69               		.loc 1 17 0 is_stmt 0 discriminator 1
+  70 002c 1092 0000 		sts encoderCount+1,__zero_reg__
+  71 0030 1092 0000 		sts encoderCount,__zero_reg__
+  72               	.L4:
+  73               		.loc 1 18 0 is_stmt 1
+  74 0034 8091 0000 		lds r24,encoderCount
+  75 0038 9091 0000 		lds r25,encoderCount+1
+  76 003c 0497      		sbiw r24,4
+  77 003e 04F0      		brlt .L5
+  78               		.loc 1 18 0 is_stmt 0 discriminator 1
+  79 0040 D092 0000 		sts encoderCount+1,r13
+  80 0044 C092 0000 		sts encoderCount,r12
+  81               	.L5:
+  82               	.LVL5:
+  19:src/main.c    **** 		menuEnc = encoderCount;
+  83               		.loc 1 19 0 is_stmt 1
+  84 0048 E090 0000 		lds r14,encoderCount
+  85 004c F090 0000 		lds r15,encoderCount+1
+  86               	.LVL6:
+  87               	.L3:
+  20:src/main.c    **** 	}
+  21:src/main.c    **** 
+  22:src/main.c    **** 	if(menu == 0)		//"home page"
+  88               		.loc 1 22 0
+  89 0050 CD2B      		or r28,r29
+  90 0052 01F4      		brne .L32
+  23:src/main.c    **** 	{
+  24:src/main.c    **** 		LCD_Home();
+  91               		.loc 1 24 0
+  92 0054 0E94 0000 		call LCD_Home
+  93               	.LVL7:
+  25:src/main.c    **** 		LCD_WriteText("Opcje:  ");
+  94               		.loc 1 25 0
+  95 0058 80E0      		ldi r24,lo8(.LC0)
+  96 005a 90E0      		ldi r25,hi8(.LC0)
+  97 005c 0E94 0000 		call LCD_WriteText
+  98               	.LVL8:
+  26:src/main.c    **** 		LCD_GoTo(0,1);
+  99               		.loc 1 26 0
+ 100 0060 61E0      		ldi r22,lo8(1)
+ 101 0062 80E0      		ldi r24,0
+ 102 0064 0E94 0000 		call LCD_GoTo
+ 103               	.LVL9:
+  27:src/main.c    **** 		LCD_WriteText("Nadaj   ");
+ 104               		.loc 1 27 0
+ 105 0068 80E0      		ldi r24,lo8(.LC1)
+ 106 006a 90E0      		ldi r25,hi8(.LC1)
+ 107 006c 0E94 0000 		call LCD_WriteText
+ 108               	.LVL10:
+ 109               	.L33:
+ 110 0070 C1E0      		ldi r28,lo8(1)
+ 111 0072 D0E0      		ldi r29,0
+ 112 0074 00C0      		rjmp .L2
+ 113               	.LVL11:
+ 114               	.L32:
+  28:src/main.c    **** 		menu=1;
+  29:src/main.c    **** 	}
+  30:src/main.c    **** 	else if(menu ==1)	//scrolling through menu options
+  31:src/main.c    **** 	{
+  32:src/main.c    **** 		switch (menuEnc)
+ 115               		.loc 1 32 0
+ 116 0076 81E0      		ldi r24,1
+ 117 0078 E816      		cp r14,r24
+ 118 007a F104      		cpc r15,__zero_reg__
+ 119 007c 01F0      		breq .L8
+ 120 007e 04F4      		brge .L9
+ 121 0080 E114      		cp r14,__zero_reg__
+ 122 0082 F104      		cpc r15,__zero_reg__
+ 123 0084 01F0      		breq .L10
+ 124 0086 00C0      		rjmp .L7
+ 125               	.L9:
+ 126 0088 82E0      		ldi r24,2
+ 127 008a E816      		cp r14,r24
+ 128 008c F104      		cpc r15,__zero_reg__
+ 129 008e 01F4      		brne .+2
+ 130 0090 00C0      		rjmp .L11
+ 131 0092 83E0      		ldi r24,3
+ 132 0094 E816      		cp r14,r24
+ 133 0096 F104      		cpc r15,__zero_reg__
+ 134 0098 01F4      		brne .+2
+ 135 009a 00C0      		rjmp .L12
+ 136 009c 00C0      		rjmp .L7
+ 137               	.L10:
+  33:src/main.c    **** 		{
+  34:src/main.c    **** 		case 0:				//BROADCAST OPTION
+  35:src/main.c    **** 			if(btn == 0)	
+ 138               		.loc 1 35 0
+ 139 009e 0115      		cp r16,__zero_reg__
+ 140 00a0 1105      		cpc r17,__zero_reg__
+ 141 00a2 01F4      		brne .L13
+  36:src/main.c    **** 			{				
+  37:src/main.c    **** 			LCD_GoTo(0,1);
+ 142               		.loc 1 37 0
+ 143 00a4 61E0      		ldi r22,lo8(1)
+ 144 00a6 80E0      		ldi r24,0
+ 145 00a8 0E94 0000 		call LCD_GoTo
+ 146               	.LVL12:
+  38:src/main.c    **** 			LCD_WriteText("nadaj   ");
+ 147               		.loc 1 38 0
+ 148 00ac 80E0      		ldi r24,lo8(.LC2)
+ 149 00ae 90E0      		ldi r25,hi8(.LC2)
+ 150 00b0 0E94 0000 		call LCD_WriteText
+ 151               	.LVL13:
+  39:src/main.c    **** 
+  40:src/main.c    **** 				if(isButton())	//enc button push at this option
+ 152               		.loc 1 40 0
+ 153 00b4 0E94 0000 		call isButton
+ 154               	.LVL14:
+ 155 00b8 892B      		or r24,r25
+ 156 00ba 01F0      		breq .L33
+ 157               	.LVL15:
+  41:src/main.c    **** 				{
+  42:src/main.c    **** 					btn = 1;	//enc button toggle on - dial
+  43:src/main.c    **** 					LCD_Clear();
+ 158               		.loc 1 43 0
+ 159 00bc 0E94 0000 		call LCD_Clear
+ 160               	.LVL16:
+  44:src/main.c    **** 					encoderCount=0;
+ 161               		.loc 1 44 0
+ 162 00c0 1092 0000 		sts encoderCount+1,__zero_reg__
+ 163 00c4 1092 0000 		sts encoderCount,__zero_reg__
+  45:src/main.c    **** 					delay_ms(800);
+ 164               		.loc 1 45 0
+ 165 00c8 80E2      		ldi r24,lo8(32)
+ 166 00ca 93E0      		ldi r25,lo8(3)
+ 167 00cc 0E94 0000 		call delay_ms
+ 168               	.LVL17:
+  46:src/main.c    **** 					LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_OFF | HD44780_CUR
+ 169               		.loc 1 46 0
+ 170 00d0 8CE0      		ldi r24,lo8(12)
+ 171 00d2 0E94 0000 		call LCD_WriteCommand
+ 172               	.LVL18:
+ 173 00d6 00C0      		rjmp .L14
+ 174               	.LVL19:
+ 175               	.L13:
+  47:src/main.c    **** 				}
+  48:src/main.c    **** 			}
+  49:src/main.c    **** 				if(btn == 1)	// enc button was pushed - option 
+ 176               		.loc 1 49 0
+ 177 00d8 0130      		cpi r16,1
+ 178 00da 1105      		cpc r17,__zero_reg__
+ 179 00dc 01F4      		brne .L33
+ 180               	.LVL20:
+ 181               	.L14:
+  50:src/main.c    **** 				{				// was selected
+  51:src/main.c    **** 					if(dial())	// doing dial function
+ 182               		.loc 1 51 0
+ 183 00de 0E94 0000 		call dial
+ 184               	.LVL21:
+ 185 00e2 892B      		or r24,r25
+ 186 00e4 01F0      		breq .+2
+ 187 00e6 00C0      		rjmp .L34
+ 188 00e8 01E0      		ldi r16,lo8(1)
+ 189 00ea 10E0      		ldi r17,0
+ 190 00ec 00C0      		rjmp .L33
+ 191               	.L8:
+  52:src/main.c    **** 					{
+  53:src/main.c    **** 					btn = 0;
+  54:src/main.c    **** 					menu = 0;
+  55:src/main.c    **** 					}
+  56:src/main.c    **** 				}
+  57:src/main.c    **** 		break;
+  58:src/main.c    **** 
+  59:src/main.c    **** 		case 1:			//DISPLAY OPTION
+  60:src/main.c    **** 		if(btn == 0)
+ 192               		.loc 1 60 0
+ 193 00ee 0115      		cp r16,__zero_reg__
+ 194 00f0 1105      		cpc r17,__zero_reg__
+ 195 00f2 01F4      		brne .L15
+  61:src/main.c    **** 		{
+  62:src/main.c    **** 		LCD_GoTo(0,1);
+ 196               		.loc 1 62 0
+ 197 00f4 61E0      		ldi r22,lo8(1)
+ 198 00f6 80E0      		ldi r24,0
+ 199 00f8 0E94 0000 		call LCD_GoTo
+ 200               	.LVL22:
+  63:src/main.c    **** 		LCD_WriteText("wyswietl");
+ 201               		.loc 1 63 0
+ 202 00fc 80E0      		ldi r24,lo8(.LC3)
+ 203 00fe 90E0      		ldi r25,hi8(.LC3)
+ 204 0100 0E94 0000 		call LCD_WriteText
+ 205               	.LVL23:
+  64:src/main.c    **** 
+  65:src/main.c    **** 			if(isButton())
+ 206               		.loc 1 65 0
+ 207 0104 0E94 0000 		call isButton
+ 208               	.LVL24:
+ 209 0108 892B      		or r24,r25
+ 210 010a 01F4      		brne .+2
+ 211 010c 00C0      		rjmp .L33
+ 212               	.LVL25:
+  66:src/main.c    **** 			{
+  67:src/main.c    **** 			btn = 2;			//enc button toggle on - display
+  68:src/main.c    **** 			delay_ms(1000);
+ 213               		.loc 1 68 0
+ 214 010e 88EE      		ldi r24,lo8(-24)
+ 215 0110 93E0      		ldi r25,lo8(3)
+ 216 0112 0E94 0000 		call delay_ms
+ 217               	.LVL26:
+  69:src/main.c    **** 			messageDisplay();
+ 218               		.loc 1 69 0
+ 219 0116 0E94 0000 		call messageDisplay
+ 220               	.LVL27:
+  70:src/main.c    **** 			LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_OFF | HD44780_CURSO
+ 221               		.loc 1 70 0
+ 222 011a 8CE0      		ldi r24,lo8(12)
+ 223 011c 0E94 0000 		call LCD_WriteCommand
+ 224               	.LVL28:
+ 225 0120 00C0      		rjmp .L16
+ 226               	.LVL29:
+ 227               	.L15:
+  71:src/main.c    **** 			}
+  72:src/main.c    **** 		}
+  73:src/main.c    **** 		if(btn == 2)
+ 228               		.loc 1 73 0
+ 229 0122 0230      		cpi r16,2
+ 230 0124 1105      		cpc r17,__zero_reg__
+ 231 0126 01F0      		breq .+2
+ 232 0128 00C0      		rjmp .L33
+ 233               	.LVL30:
+ 234               	.L16:
+  74:src/main.c    **** 		{
+  75:src/main.c    **** 		LCD_moveMode();
+ 235               		.loc 1 75 0
+ 236 012a 0E94 0000 		call LCD_moveMode
+ 237               	.LVL31:
+  76:src/main.c    **** 
+  77:src/main.c    **** 			if(isButton())		// enc button push to exit display
+ 238               		.loc 1 77 0
+ 239 012e 0E94 0000 		call isButton
+ 240               	.LVL32:
+ 241 0132 892B      		or r24,r25
+ 242 0134 01F4      		brne .L36
+ 243 0136 02E0      		ldi r16,lo8(2)
+ 244 0138 10E0      		ldi r17,0
+ 245 013a 00C0      		rjmp .L33
+ 246               	.L36:
+  78:src/main.c    **** 			{
+  79:src/main.c    **** 			delay_ms(500);
+ 247               		.loc 1 79 0
+ 248 013c 84EF      		ldi r24,lo8(-12)
+ 249 013e 91E0      		ldi r25,lo8(1)
+ 250 0140 0E94 0000 		call delay_ms
+ 251               	.LVL33:
+ 252 0144 00C0      		rjmp .L34
+ 253               	.LVL34:
+ 254               	.L11:
+  80:src/main.c    **** 			btn = 0;
+  81:src/main.c    **** 			menu = 0;
+  82:src/main.c    **** 			}
+  83:src/main.c    **** 		}
+  84:src/main.c    **** 		break;
+  85:src/main.c    **** 
+  86:src/main.c    **** 			case 2:			//DECODE OPTION
+  87:src/main.c    **** 			if(btn == 0)
+ 255               		.loc 1 87 0
+ 256 0146 0115      		cp r16,__zero_reg__
+ 257 0148 1105      		cpc r17,__zero_reg__
+ 258 014a 01F0      		breq .+2
+ 259 014c 00C0      		rjmp .L33
+  88:src/main.c    **** 			{
+  89:src/main.c    **** 			LCD_GoTo(0,1);
+ 260               		.loc 1 89 0
+ 261 014e 61E0      		ldi r22,lo8(1)
+ 262 0150 80E0      		ldi r24,0
+ 263 0152 0E94 0000 		call LCD_GoTo
+ 264               	.LVL35:
+  90:src/main.c    **** 			LCD_WriteText("rozszyf.");
+ 265               		.loc 1 90 0
+ 266 0156 80E0      		ldi r24,lo8(.LC4)
+ 267 0158 90E0      		ldi r25,hi8(.LC4)
+ 268 015a 0E94 0000 		call LCD_WriteText
+ 269               	.LVL36:
+  91:src/main.c    **** 
+  92:src/main.c    **** 				if(isButton())
+ 270               		.loc 1 92 0
+ 271 015e 0E94 0000 		call isButton
+ 272               	.LVL37:
+ 273 0162 892B      		or r24,r25
+ 274 0164 01F4      		brne .+2
+ 275 0166 00C0      		rjmp .L33
+ 276               	.LVL38:
+  93:src/main.c    **** 				{
+  94:src/main.c    **** 				btn = 3;			//enc button toggle on - decode
+  95:src/main.c    **** 				LCD_Clear();
+ 277               		.loc 1 95 0
+ 278 0168 0E94 0000 		call LCD_Clear
+ 279               	.LVL39:
+  96:src/main.c    **** 				delay_ms(600);
+ 280               		.loc 1 96 0
+ 281 016c 88E5      		ldi r24,lo8(88)
+ 282 016e 92E0      		ldi r25,lo8(2)
+ 283 0170 0E94 0000 		call delay_ms
+ 284               	.LVL40:
+  97:src/main.c    **** 				encoderCount = 0;
+ 285               		.loc 1 97 0
+ 286 0174 1092 0000 		sts encoderCount+1,__zero_reg__
+ 287 0178 1092 0000 		sts encoderCount,__zero_reg__
+  94:src/main.c    **** 				LCD_Clear();
+ 288               		.loc 1 94 0
+ 289 017c 03E0      		ldi r16,lo8(3)
+ 290 017e 10E0      		ldi r17,0
+ 291 0180 00C0      		rjmp .L33
+ 292               	.LVL41:
+ 293               	.L12:
+  98:src/main.c    **** 				}
+  99:src/main.c    **** 			}
+ 100:src/main.c    **** 			if(btn == 3)
+ 101:src/main.c    **** 			{
+ 102:src/main.c    **** 				//messageDecrypt();
+ 103:src/main.c    **** 				/*if()
+ 104:src/main.c    **** 				{
+ 105:src/main.c    **** 					while(!(isButton()))
+ 106:src/main.c    **** 					{
+ 107:src/main.c    **** 						LCD_moveMode();
+ 108:src/main.c    **** 					}
+ 109:src/main.c    **** 				delay_ms(500);
+ 110:src/main.c    **** 				btn = 0;
+ 111:src/main.c    **** 				menu = 0;*/
+ 112:src/main.c    **** 				//LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_ON | HD44780_CUR
+ 113:src/main.c    **** 				//}
+ 114:src/main.c    **** 			}
+ 115:src/main.c    **** 
+ 116:src/main.c    **** 		break;
+ 117:src/main.c    **** 			case 3:			//SET SPEED OPTION
+ 118:src/main.c    **** 			if(btn == 0)
+ 294               		.loc 1 118 0
+ 295 0182 0115      		cp r16,__zero_reg__
+ 296 0184 1105      		cpc r17,__zero_reg__
+ 297 0186 01F4      		brne .L17
+ 119:src/main.c    **** 			{
+ 120:src/main.c    **** 			LCD_GoTo(0,1);
+ 298               		.loc 1 120 0
+ 299 0188 61E0      		ldi r22,lo8(1)
+ 300 018a 80E0      		ldi r24,0
+ 301 018c 0E94 0000 		call LCD_GoTo
+ 302               	.LVL42:
+ 121:src/main.c    **** 			LCD_WriteText("predkosc");
+ 303               		.loc 1 121 0
+ 304 0190 80E0      		ldi r24,lo8(.LC5)
+ 305 0192 90E0      		ldi r25,hi8(.LC5)
+ 306 0194 0E94 0000 		call LCD_WriteText
+ 307               	.LVL43:
+ 122:src/main.c    **** 
+ 123:src/main.c    **** 				if(isButton())
+ 308               		.loc 1 123 0
+ 309 0198 0E94 0000 		call isButton
+ 310               	.LVL44:
+ 311 019c 892B      		or r24,r25
+ 312 019e 01F4      		brne .+2
+ 313 01a0 00C0      		rjmp .L33
+ 314               	.LVL45:
+ 124:src/main.c    **** 				{
+ 125:src/main.c    **** 				btn = 4;			//enc button toggle on - decode
+ 126:src/main.c    **** 				LCD_Clear();
+ 315               		.loc 1 126 0
+ 316 01a2 0E94 0000 		call LCD_Clear
+ 317               	.LVL46:
+ 127:src/main.c    **** 				delay_ms(600);
+ 318               		.loc 1 127 0
+ 319 01a6 88E5      		ldi r24,lo8(88)
+ 320 01a8 92E0      		ldi r25,lo8(2)
+ 321 01aa 0E94 0000 		call delay_ms
+ 322               	.LVL47:
+ 128:src/main.c    **** 				encoderCount = 0;
+ 323               		.loc 1 128 0
+ 324 01ae 1092 0000 		sts encoderCount+1,__zero_reg__
+ 325 01b2 1092 0000 		sts encoderCount,__zero_reg__
+ 326 01b6 00C0      		rjmp .L18
+ 327               	.LVL48:
+ 328               	.L17:
+ 129:src/main.c    **** 				}
+ 130:src/main.c    **** 			}
+ 131:src/main.c    **** 			if(btn == 4)
+ 329               		.loc 1 131 0
+ 330 01b8 0430      		cpi r16,4
+ 331 01ba 1105      		cpc r17,__zero_reg__
+ 332 01bc 01F0      		breq .+2
+ 333 01be 00C0      		rjmp .L33
+ 334               	.LVL49:
+ 335               	.L18:
+ 132:src/main.c    **** 			{
+ 133:src/main.c    **** 				if(setWpmSpeed())	// doing speed set function
+ 336               		.loc 1 133 0
+ 337 01c0 0E94 0000 		call setWpmSpeed
+ 338               	.LVL50:
+ 339 01c4 892B      		or r24,r25
+ 340 01c6 01F4      		brne .L34
+ 341 01c8 04E0      		ldi r16,lo8(4)
+ 342 01ca 10E0      		ldi r17,0
+ 343 01cc 00C0      		rjmp .L33
+ 344               	.LVL51:
+ 345               	.L34:
+ 134:src/main.c    **** 				{
+ 135:src/main.c    **** 				btn = 0;
+ 346               		.loc 1 135 0
+ 347 01ce 00E0      		ldi r16,0
+ 348 01d0 10E0      		ldi r17,0
+ 136:src/main.c    **** 				menu = 0;
+ 349               		.loc 1 136 0
+ 350 01d2 C0E0      		ldi r28,0
+ 351 01d4 D0E0      		ldi r29,0
+ 352 01d6 00C0      		rjmp .L2
+ 353               	.LVL52:
+ 354               	.L7:
+ 137:src/main.c    **** 				}
+ 138:src/main.c    **** 			}
+ 139:src/main.c    **** 
+ 140:src/main.c    **** 		break;
+ 141:src/main.c    **** 
+ 142:src/main.c    **** 			default:
+ 143:src/main.c    **** 		LCD_GoTo(0,1);
+ 355               		.loc 1 143 0
+ 356 01d8 61E0      		ldi r22,lo8(1)
+ 357 01da 80E0      		ldi r24,0
+ 358 01dc 0E94 0000 		call LCD_GoTo
+ 359               	.LVL53:
+ 144:src/main.c    **** 		LCD_WriteText("sw_err");
+ 360               		.loc 1 144 0
+ 361 01e0 80E0      		ldi r24,lo8(.LC6)
+ 362 01e2 90E0      		ldi r25,hi8(.LC6)
+ 363 01e4 0E94 0000 		call LCD_WriteText
+ 364               	.LVL54:
+ 145:src/main.c    **** 		menuEnc = 0;
+ 365               		.loc 1 145 0
+ 366 01e8 E12C      		mov r14,__zero_reg__
+ 367 01ea F12C      		mov r15,__zero_reg__
+ 368 01ec 00C0      		rjmp .L33
+ 369               		.cfi_endproc
+ 370               	.LFE11:
+ 372               		.text
+ 373               	.Letext0:
+ 374               		.file 2 "src/morse.h"
+ 375               		.file 3 "src/HD44780.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 main.c
+     /tmp/ccFRG3P9.s:2      *ABS*:000000000000003e __SP_H__
+     /tmp/ccFRG3P9.s:3      *ABS*:000000000000003d __SP_L__
+     /tmp/ccFRG3P9.s:4      *ABS*:000000000000003f __SREG__
+     /tmp/ccFRG3P9.s:5      *ABS*:0000000000000000 __tmp_reg__
+     /tmp/ccFRG3P9.s:6      *ABS*:0000000000000001 __zero_reg__
+     /tmp/ccFRG3P9.s:28     .text.startup:0000000000000000 main
+
+UNDEFINED SYMBOLS
+initializeSetup
+readEncoderCounter
+encoderCount
+LCD_Home
+LCD_WriteText
+LCD_GoTo
+isButton
+LCD_Clear
+delay_ms
+LCD_WriteCommand
+dial
+messageDisplay
+LCD_moveMode
+setWpmSpeed
+__do_copy_data

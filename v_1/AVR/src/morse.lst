@@ -1,0 +1,2791 @@
+   1               		.file	"morse.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               	.global	delay_ms
+  12               	delay_ms:
+  13               	.LFB19:
+  14               		.file 1 "src/morse.c"
+   1:src/morse.c   **** #include "morse.h"
+   2:src/morse.c   **** 
+   3:src/morse.c   **** extern int encoderCount = 0;		// encoder turns
+   4:src/morse.c   **** extern uint8_t val=0;				// encoder gray code reading
+   5:src/morse.c   **** extern int asciiNum = 0;			// current character as ascii value
+   6:src/morse.c   **** extern int wpmSpeed = 10;			// broadcast speed value in WPM
+   7:src/morse.c   **** char lcdIntBuffer[4] = {};			// buffer for displaying integers on lcd
+   8:src/morse.c   **** 
+   9:src/morse.c   **** extern char userInput[30] = {};		// message in ascii typed by user				
+  10:src/morse.c   **** int morseInput[30] ={};				// message in binary from userInput
+  11:src/morse.c   **** 
+  12:src/morse.c   **** int morseDecode[30] = {};			// message in binary typed by user to decode		
+  13:src/morse.c   **** char encodedMessage[30] = {};		// message in ascii from morseDecode
+  14:src/morse.c   **** 
+  15:src/morse.c   **** extern volatile uint16_t Timer1=0, Timer2=0;	// timers for long button push
+  16:src/morse.c   **** int lcdPos = 0;						//l cd cursor position and message length
+  17:src/morse.c   **** extern int flag = 0;				//
+  18:src/morse.c   **** 
+  19:src/morse.c   **** const uint8_t waitTime = 2;			// timer wait time in sec
+  20:src/morse.c   **** int btnFlag = 0;					// encoder button pressed/released flag
+  21:src/morse.c   **** int encoderTmp = 0;					// actual encoder reading to compare
+  22:src/morse.c   **** 
+  23:src/morse.c   **** const int morseTable[37][7] = {		// morse code array
+  24:src/morse.c   ****   {0, 1, 2},		//a
+  25:src/morse.c   ****   {1, 0, 0, 0, 2},	//b
+  26:src/morse.c   ****   {1, 0, 1, 0, 2},	//c
+  27:src/morse.c   ****   {1, 0, 0, 2},		//d
+  28:src/morse.c   ****   {0, 2},			//e
+  29:src/morse.c   ****   {0, 0, 1, 0, 2},	//f
+  30:src/morse.c   ****   {1, 0, 0, 2},		//g
+  31:src/morse.c   ****   {0, 0, 0, 0, 2},	//h
+  32:src/morse.c   ****   {0, 0, 2},		//i
+  33:src/morse.c   ****   {0, 1, 1, 1, 2},	//j
+  34:src/morse.c   ****   {1, 0, 1, 2},		//k
+  35:src/morse.c   ****   {0, 1, 0, 0, 2},	//l
+  36:src/morse.c   ****   {1, 1, 2},		//m
+  37:src/morse.c   ****   {1, 0, 2},		//n
+  38:src/morse.c   ****   {1, 1, 1, 2},		//o
+  39:src/morse.c   ****   {0, 1, 1, 0, 2},	//p
+  40:src/morse.c   ****   {1, 1, 0, 1, 2},	//q
+  41:src/morse.c   ****   {0, 1, 0, 2},		//r
+  42:src/morse.c   ****   {0, 0, 0, 2},		//s
+  43:src/morse.c   ****   {1, 2},			//t
+  44:src/morse.c   ****   {0, 0, 1, 2},		//u
+  45:src/morse.c   ****   {0, 1, 1, 2},		//w
+  46:src/morse.c   ****   {0, 0, 0, 1, 2},	//v
+  47:src/morse.c   ****   {1, 0, 0, 1, 2},	//x
+  48:src/morse.c   ****   {1, 0, 1, 2},		//y
+  49:src/morse.c   ****   {1, 1, 0, 0, 2},	//z
+  50:src/morse.c   ****   {0, 1, 1, 1, 1, 2},//1
+  51:src/morse.c   ****   {0, 0, 1, 1, 1, 2},//2
+  52:src/morse.c   ****   {0, 0, 0, 1, 1, 2},//3
+  53:src/morse.c   ****   {0, 0, 0, 0, 1, 2},//4
+  54:src/morse.c   ****   {0, 0, 0, 0, 0, 2},//5
+  55:src/morse.c   ****   {1, 0, 0, 0, 0, 2},//6
+  56:src/morse.c   ****   {1, 1, 0, 0, 0, 2},//7
+  57:src/morse.c   ****   {1, 1, 1, 0, 0, 2},//8
+  58:src/morse.c   ****   {1, 1, 1, 1, 0, 2},//9
+  59:src/morse.c   ****   {1, 1, 1, 1, 1, 2}//0
+  60:src/morse.c   ****   //0 - dot, 1 - dash, 2 - end
+  61:src/morse.c   **** };
+  62:src/morse.c   **** 
+  63:src/morse.c   **** void initializeSetup (void)		//initializing registers
+  64:src/morse.c   **** {
+  65:src/morse.c   **** 	 MCUCSR = (1<<JTD);			//disabling JTAG
+  66:src/morse.c   **** 	 MCUCSR = (1<<JTD);			//
+  67:src/morse.c   **** 
+  68:src/morse.c   **** 	TCCR2 |= (1<<WGM21);						//work mode CTC
+  69:src/morse.c   **** 	TCCR2 |= (1<<CS22)|(1<<CS21)|(1<<CS20);		//prescaler = 1024
+  70:src/morse.c   **** 	OCR2  = 4;				//comparison interrupt every 10ms (100Hz)
+  71:src/morse.c   **** 	TIMSK = (1<<OCIE2);		//interrupt unlock CompareMatch
+  72:src/morse.c   **** 
+  73:src/morse.c   **** 		DDRA &=~ (1 << ENC_A);		// encoder pins as input
+  74:src/morse.c   **** 		DDRA &=~ (1 << ENC_B);		//
+  75:src/morse.c   **** 		PORTA |= (1 << ENC_B)		// with pull-up enabled
+  76:src/morse.c   **** 				|(1 << ENC_A);		//
+  77:src/morse.c   **** 
+  78:src/morse.c   **** 		DDRC |= (1<<LED);			//signal LED as output
+  79:src/morse.c   **** 		DDRA |= (0<<ENC_BTN);		//encoder button pin as input
+  80:src/morse.c   **** 
+  81:src/morse.c   **** 		DDRC |= (0<<SW_1);	//switch 1 as input
+  82:src/morse.c   **** 		DDRC |= (0<<SW_2);	//switch 2 as input
+  83:src/morse.c   **** 
+  84:src/morse.c   **** 	LCD_Initalize();		//LCD initializaion
+  85:src/morse.c   **** 	val = readEncoder();	//first encoder value reading
+  86:src/morse.c   **** 	sei();					//timers enabled
+  87:src/morse.c   **** }
+  88:src/morse.c   **** 
+  89:src/morse.c   **** int dial(void)
+  90:src/morse.c   **** {
+  91:src/morse.c   **** 	if(btnFlag == 0)
+  92:src/morse.c   **** 	{
+  93:src/morse.c   **** 		asciiNum = encoderCount+97;					//encoder counter into characters
+  94:src/morse.c   **** 		if(asciiNum < 97) 	encoderCount = 25;		//only letters available
+  95:src/morse.c   **** 		if(asciiNum > 122)	encoderCount = 0;		//
+  96:src/morse.c   **** 
+  97:src/morse.c   **** 		LCD_GoTo(lcdPos,0);
+  98:src/morse.c   **** 		LCD_WriteData(asciiNum);	//letter selection
+  99:src/morse.c   **** 		LCD_GoTo(lcdPos,1);
+ 100:src/morse.c   **** 		LCD_WriteData(94);			//cursor pointer
+ 101:src/morse.c   **** 	}
+ 102:src/morse.c   **** 
+ 103:src/morse.c   **** 	/*if(!(PINC & 0x02) && !(PINC & 0x04))	//dial mode exit when 
+ 104:src/morse.c   **** 	{										//both switches pressed
+ 105:src/morse.c   **** 		LCD_Clear();
+ 106:src/morse.c   **** 		return 1;
+ 107:src/morse.c   **** 	}*/
+ 108:src/morse.c   **** 
+ 109:src/morse.c   **** 	if (!(PINA & 0x08) && btnFlag == 0)		//encoder button push
+ 110:src/morse.c   **** 	{
+ 111:src/morse.c   **** 		Timer1 = (waitTime*1000)/10;		//timer set
+ 112:src/morse.c   **** 		btnFlag = 1;						//button pressed flag
+ 113:src/morse.c   **** 	}
+ 114:src/morse.c   **** 	else if((PINA & 0x08) && btnFlag == 1)	//encoder button release
+ 115:src/morse.c   **** 	{
+ 116:src/morse.c   **** 		userInput[lcdPos] = asciiNum;	//writing selected character 
+ 117:src/morse.c   **** 		lcdPos++;						// to the memory
+ 118:src/morse.c   **** 		delay_ms(100);
+ 119:src/morse.c   **** 		encoderCount = 0;		//encoder counter back to 'a'
+ 120:src/morse.c   **** 		LCD_clearLine(1);
+ 121:src/morse.c   **** 		btnFlag = 0;			//button released flag
+ 122:src/morse.c   **** 		Timer1 = 0;				//timer reset
+ 123:src/morse.c   **** 	}
+ 124:src/morse.c   **** 	else if(!(PINA & 0x08) && btnFlag == 1 && !Timer1)	//encoder button long press
+ 125:src/morse.c   **** 	{
+ 126:src/morse.c   **** 		LCD_Clear();
+ 127:src/morse.c   **** 		userInput[lcdPos] = 'E';	//indicating the end of message
+ 128:src/morse.c   **** 		for(int i=0;i<lcdPos;i++)	//message display on scnd line
+ 129:src/morse.c   **** 		{
+ 130:src/morse.c   **** 			LCD_GoTo(i,1);
+ 131:src/morse.c   **** 			LCD_WriteData(userInput[i]);
+ 132:src/morse.c   **** 		}
+ 133:src/morse.c   **** 
+ 134:src/morse.c   **** 		//LCD_WriteData(lcdPos+48);	//message length display
+ 135:src/morse.c   **** 		btnFlag = 0;			//button released flag
+ 136:src/morse.c   **** 		delay_ms(1000);
+ 137:src/morse.c   **** 		broadcast((2400/wpmSpeed),lcdPos);	//broadcatsing message at arg1 speed - pause between elements 
+ 138:src/morse.c   **** 											// and of arg2 length
+ 139:src/morse.c   **** 		delay_ms(700);
+ 140:src/morse.c   **** 		btnFlag = 2;			//end of transmission
+ 141:src/morse.c   **** 	}
+ 142:src/morse.c   **** 	else if(btnFlag == 2)
+ 143:src/morse.c   **** 	{
+ 144:src/morse.c   **** 		LCD_Home();
+ 145:src/morse.c   **** 		LCD_WriteText("powtorz?");
+ 146:src/morse.c   **** 		LCD_GoTo(0,1);
+ 147:src/morse.c   **** 		LCD_WriteText("T   N   ");
+ 148:src/morse.c   **** 		if(!(PINC & 0x02))		//SW 1
+ 149:src/morse.c   **** 		{
+ 150:src/morse.c   **** 			LCD_Clear();
+ 151:src/morse.c   **** 			delay_ms(500);
+ 152:src/morse.c   **** 			broadcast((2400/wpmSpeed),lcdPos);
+ 153:src/morse.c   **** 		}
+ 154:src/morse.c   **** 		else if(!(PINC & 0x04))	//SW 2
+ 155:src/morse.c   **** 		{
+ 156:src/morse.c   **** 			lcdPos = 0;
+ 157:src/morse.c   **** 			btnFlag = 0;
+ 158:src/morse.c   **** 			return 1;
+ 159:src/morse.c   **** 		}
+ 160:src/morse.c   **** 
+ 161:src/morse.c   **** 
+ 162:src/morse.c   **** 	}
+ 163:src/morse.c   **** return 0;
+ 164:src/morse.c   **** }
+ 165:src/morse.c   **** 
+ 166:src/morse.c   **** void broadcast(int period,int length)
+ 167:src/morse.c   **** {
+ 168:src/morse.c   **** 	int symbolSpace = period;
+ 169:src/morse.c   **** 	int dashSpace = period*3;
+ 170:src/morse.c   **** 	int charSpace = period*3;
+ 171:src/morse.c   **** 	int wordSpace = period*7;
+ 172:src/morse.c   **** 
+ 173:src/morse.c   **** 	int pos=0;
+ 174:src/morse.c   **** 	
+ 175:src/morse.c   **** 	for(int i=0;i<length;i++)
+ 176:src/morse.c   **** 	{
+ 177:src/morse.c   **** 		int j=0;
+ 178:src/morse.c   **** 		while(morseTable[userInput[i]-97][j] != 2)
+ 179:src/morse.c   **** 		{
+ 180:src/morse.c   **** 			LCD_GoTo(pos,0);
+ 181:src/morse.c   **** 			if(morseTable[userInput[i]-97][j] == 0)	//1-dot (in table 0-dot)
+ 182:src/morse.c   **** 			{										//dot
+ 183:src/morse.c   **** 				LCD_WriteData('1');
+ 184:src/morse.c   **** 				morseInput[pos] = 1;
+ 185:src/morse.c   **** 				blinkLed(period,symbolSpace);
+ 186:src/morse.c   **** 			}
+ 187:src/morse.c   **** 			else if(morseTable[userInput[i]-97][j] == 1)	
+ 188:src/morse.c   **** 			{										//dash
+ 189:src/morse.c   **** 				LCD_WriteData('0');
+ 190:src/morse.c   **** 				morseInput[pos] = 0;
+ 191:src/morse.c   **** 				blinkLed(dashSpace,symbolSpace);
+ 192:src/morse.c   **** 			}
+ 193:src/morse.c   **** 			j++;
+ 194:src/morse.c   **** 			pos++;
+ 195:src/morse.c   **** 		}
+ 196:src/morse.c   **** 		delay_ms(charSpace - period);	//one period is left after last blink operation
+ 197:src/morse.c   **** 	}
+ 198:src/morse.c   **** 	morseInput[pos] = 2;		//end of message transcripted to morse
+ 199:src/morse.c   **** }
+ 200:src/morse.c   **** 
+ 201:src/morse.c   **** int setWpmSpeed()		//change of the wpm speed
+ 202:src/morse.c   **** {
+ 203:src/morse.c   **** 	wpmSpeed = encoderCount;
+ 204:src/morse.c   **** 	itoa(wpmSpeed,lcdIntBuffer,10);		//conversion from int to array od chars for display		
+ 205:src/morse.c   **** 												//	^--- zapisac w przewodniku
+ 206:src/morse.c   **** 	LCD_Home();
+ 207:src/morse.c   **** 	LCD_WriteText("WPM:    ");
+ 208:src/morse.c   **** 	LCD_GoTo(0,1);
+ 209:src/morse.c   **** 	LCD_WriteText(lcdIntBuffer);
+ 210:src/morse.c   **** 	
+ 211:src/morse.c   **** 	if(isButton())
+ 212:src/morse.c   **** 	{
+ 213:src/morse.c   **** 		encoderCount = 0;
+ 214:src/morse.c   **** 		delay_ms(600);
+ 215:src/morse.c   **** 		return 1;
+ 216:src/morse.c   **** 	}
+ 217:src/morse.c   **** 	return 0;
+ 218:src/morse.c   **** }
+ 219:src/morse.c   **** 
+ 220:src/morse.c   **** void messageDisplay()	// display message in morse at first line
+ 221:src/morse.c   **** {						// and in ascii at second line
+ 222:src/morse.c   **** 	LCD_clearLine(0);
+ 223:src/morse.c   **** 	LCD_clearLine(1);
+ 224:src/morse.c   **** 	
+ 225:src/morse.c   **** 	if(userInput[0] < 97 || userInput[0] > 122)
+ 226:src/morse.c   **** 	{								// if input beyond ascii alphabet range
+ 227:src/morse.c   **** 		LCD_Home();					// - error
+ 228:src/morse.c   **** 		LCD_WriteText("brak");
+ 229:src/morse.c   **** 		LCD_GoTo(0,1);
+ 230:src/morse.c   **** 		LCD_WriteText("danych");
+ 231:src/morse.c   **** 		return;
+ 232:src/morse.c   **** 	}
+ 233:src/morse.c   **** 
+ 234:src/morse.c   **** 	int j = 0;
+ 235:src/morse.c   **** 	while(morseInput[j] != 2)	// read and display message in morse 
+ 236:src/morse.c   **** 	{							// tab content until '2'
+ 237:src/morse.c   **** 		LCD_GoTo(j,0);
+ 238:src/morse.c   **** 		LCD_WriteData(morseInput[j]+48);
+ 239:src/morse.c   **** 		j++;
+ 240:src/morse.c   **** 	}
+ 241:src/morse.c   **** 	int k = 0;
+ 242:src/morse.c   **** 	while(userInput[k] != 'E')	// read and display message in ascii
+ 243:src/morse.c   **** 	{							// tab content until 'E'
+ 244:src/morse.c   **** 		LCD_GoTo(k,1);
+ 245:src/morse.c   **** 		LCD_WriteData(userInput[k]);
+ 246:src/morse.c   **** 		k++;
+ 247:src/morse.c   **** 	}
+ 248:src/morse.c   **** }
+ 249:src/morse.c   **** 
+ 250:src/morse.c   **** void LCD_move(char dir)			// move contents of the screen in the direction of dir
+ 251:src/morse.c   **** {
+ 252:src/morse.c   **** 	if(dir =='L')				// move content to right
+ 253:src/morse.c   **** 	{
+ 254:src/morse.c   **** 		LCD_WriteCommand(HD44780_DISPLAY_CURSOR_SHIFT|HD44780_SHIFT_DISPLAY|HD44780_SHIFT_RIGHT);
+ 255:src/morse.c   **** 		LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_OFF | HD44780_CURSOR
+ 256:src/morse.c   **** 		delay_ms(20);
+ 257:src/morse.c   **** 	}
+ 258:src/morse.c   **** 	else if(dir =='R')			// move content to left
+ 259:src/morse.c   **** 	{
+ 260:src/morse.c   **** 		LCD_WriteCommand(HD44780_DISPLAY_CURSOR_SHIFT|HD44780_SHIFT_DISPLAY|HD44780_SHIFT_LEFT);
+ 261:src/morse.c   **** 		LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_OFF | HD44780_CURSOR
+ 262:src/morse.c   **** 		delay_ms(20);
+ 263:src/morse.c   **** 	}
+ 264:src/morse.c   **** }
+ 265:src/morse.c   **** 
+ 266:src/morse.c   **** void LCD_moveMode()			// move contents of the screen using sw 1 and 2
+ 267:src/morse.c   **** {
+ 268:src/morse.c   **** 	if (!(PINC & 0x02))			//1 button push (SW 1) - text to the left
+ 269:src/morse.c   **** 	{
+ 270:src/morse.c   **** 		delay_ms(100);
+ 271:src/morse.c   **** 		LCD_move('R');
+ 272:src/morse.c   **** 	}
+ 273:src/morse.c   **** 
+ 274:src/morse.c   **** 	if (!(PINC & 0x04))		//2 button push (SW 2) - text to the right
+ 275:src/morse.c   **** 	{
+ 276:src/morse.c   **** 		delay_ms(100);
+ 277:src/morse.c   **** 		LCD_move('L');
+ 278:src/morse.c   **** 	}
+ 279:src/morse.c   **** }
+ 280:src/morse.c   **** 
+ 281:src/morse.c   **** void blinkLed(int on, int off)	// turn on the led for 
+ 282:src/morse.c   **** {								//'on' and off for 'off' milisecondds
+ 283:src/morse.c   **** 	PORTC |= (1<<LED);
+ 284:src/morse.c   **** 	delay_ms(on);
+ 285:src/morse.c   **** 	PORTC &= ~(1<<LED);
+ 286:src/morse.c   **** 	delay_ms(off);
+ 287:src/morse.c   **** }
+ 288:src/morse.c   **** 
+ 289:src/morse.c   **** void delay_ms( int ms)			// delay error workaround for linux
+ 290:src/morse.c   **** {
+  15               		.loc 1 290 0
+  16               		.cfi_startproc
+  17               	.LVL0:
+  18 0000 CF93      		push r28
+  19               	.LCFI0:
+  20               		.cfi_def_cfa_offset 3
+  21               		.cfi_offset 28, -2
+  22 0002 DF93      		push r29
+  23               	.LCFI1:
+  24               		.cfi_def_cfa_offset 4
+  25               		.cfi_offset 29, -3
+  26 0004 00D0      		rcall .
+  27 0006 00D0      		rcall .
+  28               	.LCFI2:
+  29               		.cfi_def_cfa_offset 8
+  30 0008 CDB7      		in r28,__SP_L__
+  31 000a DEB7      		in r29,__SP_H__
+  32               	.LCFI3:
+  33               		.cfi_def_cfa_register 28
+  34               	/* prologue: function */
+  35               	/* frame size = 4 */
+  36               	/* stack size = 6 */
+  37               	.L__stack_usage = 6
+ 291:src/morse.c   **** 	volatile long unsigned int i;
+ 292:src/morse.c   **** 	for(i=0;i<ms;i++)
+  38               		.loc 1 292 0
+  39 000c 1982      		std Y+1,__zero_reg__
+  40 000e 1A82      		std Y+2,__zero_reg__
+  41 0010 1B82      		std Y+3,__zero_reg__
+  42 0012 1C82      		std Y+4,__zero_reg__
+  43 0014 092E      		mov __tmp_reg__,r25
+  44 0016 000C      		lsl r0
+  45 0018 AA0B      		sbc r26,r26
+  46 001a BB0B      		sbc r27,r27
+  47               	.L2:
+  48               		.loc 1 292 0 is_stmt 0 discriminator 1
+  49 001c 4981      		ldd r20,Y+1
+  50 001e 5A81      		ldd r21,Y+2
+  51 0020 6B81      		ldd r22,Y+3
+  52 0022 7C81      		ldd r23,Y+4
+  53 0024 4817      		cp r20,r24
+  54 0026 5907      		cpc r21,r25
+  55 0028 6A07      		cpc r22,r26
+  56 002a 7B07      		cpc r23,r27
+  57 002c 00F4      		brsh .L5
+  58               	.LVL1:
+  59               	.LBB8:
+  60               	.LBB9:
+  61               		.file 2 "/usr/lib/avr/include/util/delay.h"
+   1:/usr/lib/avr/include/util/delay.h **** /* Copyright (c) 2002, Marek Michalkiewicz
+   2:/usr/lib/avr/include/util/delay.h ****    Copyright (c) 2004,2005,2007 Joerg Wunsch
+   3:/usr/lib/avr/include/util/delay.h ****    Copyright (c) 2007  Florin-Viorel Petrov
+   4:/usr/lib/avr/include/util/delay.h ****    All rights reserved.
+   5:/usr/lib/avr/include/util/delay.h **** 
+   6:/usr/lib/avr/include/util/delay.h ****    Redistribution and use in source and binary forms, with or without
+   7:/usr/lib/avr/include/util/delay.h ****    modification, are permitted provided that the following conditions are met:
+   8:/usr/lib/avr/include/util/delay.h **** 
+   9:/usr/lib/avr/include/util/delay.h ****    * Redistributions of source code must retain the above copyright
+  10:/usr/lib/avr/include/util/delay.h ****      notice, this list of conditions and the following disclaimer.
+  11:/usr/lib/avr/include/util/delay.h **** 
+  12:/usr/lib/avr/include/util/delay.h ****    * Redistributions in binary form must reproduce the above copyright
+  13:/usr/lib/avr/include/util/delay.h ****      notice, this list of conditions and the following disclaimer in
+  14:/usr/lib/avr/include/util/delay.h ****      the documentation and/or other materials provided with the
+  15:/usr/lib/avr/include/util/delay.h ****      distribution.
+  16:/usr/lib/avr/include/util/delay.h **** 
+  17:/usr/lib/avr/include/util/delay.h ****    * Neither the name of the copyright holders nor the names of
+  18:/usr/lib/avr/include/util/delay.h ****      contributors may be used to endorse or promote products derived
+  19:/usr/lib/avr/include/util/delay.h ****      from this software without specific prior written permission.
+  20:/usr/lib/avr/include/util/delay.h **** 
+  21:/usr/lib/avr/include/util/delay.h ****   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  22:/usr/lib/avr/include/util/delay.h ****   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  23:/usr/lib/avr/include/util/delay.h ****   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  24:/usr/lib/avr/include/util/delay.h ****   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  25:/usr/lib/avr/include/util/delay.h ****   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  26:/usr/lib/avr/include/util/delay.h ****   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  27:/usr/lib/avr/include/util/delay.h ****   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  28:/usr/lib/avr/include/util/delay.h ****   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  29:/usr/lib/avr/include/util/delay.h ****   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  30:/usr/lib/avr/include/util/delay.h ****   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  31:/usr/lib/avr/include/util/delay.h ****   POSSIBILITY OF SUCH DAMAGE. */
+  32:/usr/lib/avr/include/util/delay.h **** 
+  33:/usr/lib/avr/include/util/delay.h **** /* $Id$ */
+  34:/usr/lib/avr/include/util/delay.h **** 
+  35:/usr/lib/avr/include/util/delay.h **** #ifndef _UTIL_DELAY_H_
+  36:/usr/lib/avr/include/util/delay.h **** #define _UTIL_DELAY_H_ 1
+  37:/usr/lib/avr/include/util/delay.h **** 
+  38:/usr/lib/avr/include/util/delay.h **** #ifndef __HAS_DELAY_CYCLES
+  39:/usr/lib/avr/include/util/delay.h **** #define __HAS_DELAY_CYCLES 1
+  40:/usr/lib/avr/include/util/delay.h **** #endif
+  41:/usr/lib/avr/include/util/delay.h **** 
+  42:/usr/lib/avr/include/util/delay.h **** #include <inttypes.h>
+  43:/usr/lib/avr/include/util/delay.h **** #include <util/delay_basic.h>
+  44:/usr/lib/avr/include/util/delay.h **** #include <math.h>
+  45:/usr/lib/avr/include/util/delay.h **** 
+  46:/usr/lib/avr/include/util/delay.h **** /** \file */
+  47:/usr/lib/avr/include/util/delay.h **** /** \defgroup util_delay <util/delay.h>: Convenience functions for busy-wait delay loops
+  48:/usr/lib/avr/include/util/delay.h ****     \code
+  49:/usr/lib/avr/include/util/delay.h ****     #define F_CPU 1000000UL  // 1 MHz
+  50:/usr/lib/avr/include/util/delay.h ****     //#define F_CPU 14.7456E6
+  51:/usr/lib/avr/include/util/delay.h ****     #include <util/delay.h>
+  52:/usr/lib/avr/include/util/delay.h ****     \endcode
+  53:/usr/lib/avr/include/util/delay.h **** 
+  54:/usr/lib/avr/include/util/delay.h ****     \note As an alternative method, it is possible to pass the
+  55:/usr/lib/avr/include/util/delay.h ****     F_CPU macro down to the compiler from the Makefile.
+  56:/usr/lib/avr/include/util/delay.h ****     Obviously, in that case, no \c \#define statement should be
+  57:/usr/lib/avr/include/util/delay.h ****     used.
+  58:/usr/lib/avr/include/util/delay.h **** 
+  59:/usr/lib/avr/include/util/delay.h ****     The functions in this header file are wrappers around the basic
+  60:/usr/lib/avr/include/util/delay.h ****     busy-wait functions from <util/delay_basic.h>.  They are meant as
+  61:/usr/lib/avr/include/util/delay.h ****     convenience functions where actual time values can be specified
+  62:/usr/lib/avr/include/util/delay.h ****     rather than a number of cycles to wait for.  The idea behind is
+  63:/usr/lib/avr/include/util/delay.h ****     that compile-time constant expressions will be eliminated by
+  64:/usr/lib/avr/include/util/delay.h ****     compiler optimization so floating-point expressions can be used
+  65:/usr/lib/avr/include/util/delay.h ****     to calculate the number of delay cycles needed based on the CPU
+  66:/usr/lib/avr/include/util/delay.h ****     frequency passed by the macro F_CPU.
+  67:/usr/lib/avr/include/util/delay.h **** 
+  68:/usr/lib/avr/include/util/delay.h ****     \note In order for these functions to work as intended, compiler
+  69:/usr/lib/avr/include/util/delay.h ****     optimizations <em>must</em> be enabled, and the delay time
+  70:/usr/lib/avr/include/util/delay.h ****     <em>must</em> be an expression that is a known constant at
+  71:/usr/lib/avr/include/util/delay.h ****     compile-time.  If these requirements are not met, the resulting
+  72:/usr/lib/avr/include/util/delay.h ****     delay will be much longer (and basically unpredictable), and
+  73:/usr/lib/avr/include/util/delay.h ****     applications that otherwise do not use floating-point calculations
+  74:/usr/lib/avr/include/util/delay.h ****     will experience severe code bloat by the floating-point library
+  75:/usr/lib/avr/include/util/delay.h ****     routines linked into the application.
+  76:/usr/lib/avr/include/util/delay.h **** 
+  77:/usr/lib/avr/include/util/delay.h ****     The functions available allow the specification of microsecond, and
+  78:/usr/lib/avr/include/util/delay.h ****     millisecond delays directly, using the application-supplied macro
+  79:/usr/lib/avr/include/util/delay.h ****     F_CPU as the CPU clock frequency (in Hertz).
+  80:/usr/lib/avr/include/util/delay.h **** 
+  81:/usr/lib/avr/include/util/delay.h **** */
+  82:/usr/lib/avr/include/util/delay.h **** 
+  83:/usr/lib/avr/include/util/delay.h **** #if !defined(__DOXYGEN__)
+  84:/usr/lib/avr/include/util/delay.h **** static inline void _delay_us(double __us) __attribute__((always_inline));
+  85:/usr/lib/avr/include/util/delay.h **** static inline void _delay_ms(double __ms) __attribute__((always_inline));
+  86:/usr/lib/avr/include/util/delay.h **** #endif
+  87:/usr/lib/avr/include/util/delay.h **** 
+  88:/usr/lib/avr/include/util/delay.h **** #ifndef F_CPU
+  89:/usr/lib/avr/include/util/delay.h **** /* prevent compiler error by supplying a default */
+  90:/usr/lib/avr/include/util/delay.h **** # warning "F_CPU not defined for <util/delay.h>"
+  91:/usr/lib/avr/include/util/delay.h **** # define F_CPU 1000000UL
+  92:/usr/lib/avr/include/util/delay.h **** #endif
+  93:/usr/lib/avr/include/util/delay.h **** 
+  94:/usr/lib/avr/include/util/delay.h **** #ifndef __OPTIMIZE__
+  95:/usr/lib/avr/include/util/delay.h **** # warning "Compiler optimizations disabled; functions from <util/delay.h> won't work as designed"
+  96:/usr/lib/avr/include/util/delay.h **** #endif
+  97:/usr/lib/avr/include/util/delay.h **** 
+  98:/usr/lib/avr/include/util/delay.h **** #if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+  99:/usr/lib/avr/include/util/delay.h ****   !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+ 100:/usr/lib/avr/include/util/delay.h ****   __STDC_HOSTED__
+ 101:/usr/lib/avr/include/util/delay.h **** #  include <math.h>
+ 102:/usr/lib/avr/include/util/delay.h **** #endif
+ 103:/usr/lib/avr/include/util/delay.h **** 
+ 104:/usr/lib/avr/include/util/delay.h **** /**
+ 105:/usr/lib/avr/include/util/delay.h ****    \ingroup util_delay
+ 106:/usr/lib/avr/include/util/delay.h **** 
+ 107:/usr/lib/avr/include/util/delay.h ****    Perform a delay of \c __ms milliseconds, using _delay_loop_2().
+ 108:/usr/lib/avr/include/util/delay.h **** 
+ 109:/usr/lib/avr/include/util/delay.h ****    The macro F_CPU is supposed to be defined to a
+ 110:/usr/lib/avr/include/util/delay.h ****    constant defining the CPU clock frequency (in Hertz).
+ 111:/usr/lib/avr/include/util/delay.h **** 
+ 112:/usr/lib/avr/include/util/delay.h ****    The maximal possible delay is 262.14 ms / F_CPU in MHz.
+ 113:/usr/lib/avr/include/util/delay.h **** 
+ 114:/usr/lib/avr/include/util/delay.h ****    When the user request delay which exceed the maximum possible one,
+ 115:/usr/lib/avr/include/util/delay.h ****    _delay_ms() provides a decreased resolution functionality. In this
+ 116:/usr/lib/avr/include/util/delay.h ****    mode _delay_ms() will work with a resolution of 1/10 ms, providing
+ 117:/usr/lib/avr/include/util/delay.h ****    delays up to 6.5535 seconds (independent from CPU frequency).  The
+ 118:/usr/lib/avr/include/util/delay.h ****    user will not be informed about decreased resolution.
+ 119:/usr/lib/avr/include/util/delay.h **** 
+ 120:/usr/lib/avr/include/util/delay.h ****    If the avr-gcc toolchain has __builtin_avr_delay_cycles(unsigned long)
+ 121:/usr/lib/avr/include/util/delay.h ****    support, maximal possible delay is 4294967.295 ms/ F_CPU in MHz. For
+ 122:/usr/lib/avr/include/util/delay.h ****    values greater than the maximal possible delay, overflows results in
+ 123:/usr/lib/avr/include/util/delay.h ****    no delay i.e., 0ms.
+ 124:/usr/lib/avr/include/util/delay.h **** 
+ 125:/usr/lib/avr/include/util/delay.h ****    Conversion of __us into clock cycles may not always result in integer.
+ 126:/usr/lib/avr/include/util/delay.h ****    By default, the clock cycles rounded up to next integer. This ensures that
+ 127:/usr/lib/avr/include/util/delay.h ****    the user gets atleast __us microseconds of delay.
+ 128:/usr/lib/avr/include/util/delay.h **** 
+ 129:/usr/lib/avr/include/util/delay.h ****    Alternatively, user can define __DELAY_ROUND_DOWN__ and __DELAY_ROUND_CLOSEST__
+ 130:/usr/lib/avr/include/util/delay.h ****    to round down and round to closest integer.
+ 131:/usr/lib/avr/include/util/delay.h **** 
+ 132:/usr/lib/avr/include/util/delay.h ****    Note: The new implementation of _delay_ms(double __ms) with 
+ 133:/usr/lib/avr/include/util/delay.h ****     __builtin_avr_delay_cycles(unsigned long) support is not backward compatible. 
+ 134:/usr/lib/avr/include/util/delay.h ****    User can define __DELAY_BACKWARD_COMPATIBLE__ to get a backward compatible delay.
+ 135:/usr/lib/avr/include/util/delay.h ****    Also, the backward compatible
+ 136:/usr/lib/avr/include/util/delay.h ****    algorithm will be chosen if the code is compiled in a <em>freestanding
+ 137:/usr/lib/avr/include/util/delay.h ****    environment</em> (GCC option \c -ffreestanding), as the math functions
+ 138:/usr/lib/avr/include/util/delay.h ****    required for rounding are not available to the compiler then.
+ 139:/usr/lib/avr/include/util/delay.h **** 
+ 140:/usr/lib/avr/include/util/delay.h ****  */
+ 141:/usr/lib/avr/include/util/delay.h **** void
+ 142:/usr/lib/avr/include/util/delay.h **** _delay_ms(double __ms)
+ 143:/usr/lib/avr/include/util/delay.h **** {
+ 144:/usr/lib/avr/include/util/delay.h **** 	double __tmp ; 
+ 145:/usr/lib/avr/include/util/delay.h **** #if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+ 146:/usr/lib/avr/include/util/delay.h ****   !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+ 147:/usr/lib/avr/include/util/delay.h ****   __STDC_HOSTED__
+ 148:/usr/lib/avr/include/util/delay.h **** 	uint32_t __ticks_dc;
+ 149:/usr/lib/avr/include/util/delay.h **** 	extern void __builtin_avr_delay_cycles(unsigned long);
+ 150:/usr/lib/avr/include/util/delay.h **** 	__tmp = ((F_CPU) / 1e3) * __ms;
+ 151:/usr/lib/avr/include/util/delay.h **** 
+ 152:/usr/lib/avr/include/util/delay.h **** 	#if defined(__DELAY_ROUND_DOWN__)
+ 153:/usr/lib/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)fabs(__tmp);
+ 154:/usr/lib/avr/include/util/delay.h **** 
+ 155:/usr/lib/avr/include/util/delay.h **** 	#elif defined(__DELAY_ROUND_CLOSEST__)
+ 156:/usr/lib/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)(fabs(__tmp)+0.5);
+ 157:/usr/lib/avr/include/util/delay.h **** 
+ 158:/usr/lib/avr/include/util/delay.h **** 	#else
+ 159:/usr/lib/avr/include/util/delay.h **** 		//round up by default
+ 160:/usr/lib/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+ 161:/usr/lib/avr/include/util/delay.h **** 	#endif
+ 162:/usr/lib/avr/include/util/delay.h **** 
+ 163:/usr/lib/avr/include/util/delay.h **** 	__builtin_avr_delay_cycles(__ticks_dc);
+  62               		.loc 2 163 0 is_stmt 1
+  63 002e E9EF      		ldi r30,lo8(249)
+  64 0030 F0E0      		ldi r31,hi8(249)
+  65 0032 3197      	1:	sbiw r30,1
+  66 0034 01F4      		brne 1b
+  67 0036 00C0      		rjmp .
+  68 0038 0000      		nop
+  69               	.LBE9:
+  70               	.LBE8:
+  71               		.loc 1 292 0
+  72 003a 4981      		ldd r20,Y+1
+  73 003c 5A81      		ldd r21,Y+2
+  74 003e 6B81      		ldd r22,Y+3
+  75 0040 7C81      		ldd r23,Y+4
+  76 0042 4F5F      		subi r20,-1
+  77 0044 5F4F      		sbci r21,-1
+  78 0046 6F4F      		sbci r22,-1
+  79 0048 7F4F      		sbci r23,-1
+  80 004a 4983      		std Y+1,r20
+  81 004c 5A83      		std Y+2,r21
+  82 004e 6B83      		std Y+3,r22
+  83 0050 7C83      		std Y+4,r23
+  84 0052 00C0      		rjmp .L2
+  85               	.LVL2:
+  86               	.L5:
+  87               	/* epilogue start */
+ 293:src/morse.c   **** 		_delay_ms(1);
+ 294:src/morse.c   **** }
+  88               		.loc 1 294 0
+  89 0054 0F90      		pop __tmp_reg__
+  90 0056 0F90      		pop __tmp_reg__
+  91 0058 0F90      		pop __tmp_reg__
+  92 005a 0F90      		pop __tmp_reg__
+  93 005c DF91      		pop r29
+  94 005e CF91      		pop r28
+  95 0060 0895      		ret
+  96               		.cfi_endproc
+  97               	.LFE19:
+ 100               	LCD_move.part.0:
+ 101               	.LFB25:
+ 250:src/morse.c   **** {
+ 102               		.loc 1 250 0
+ 103               		.cfi_startproc
+ 104               	/* prologue: function */
+ 105               	/* frame size = 0 */
+ 106               	/* stack size = 0 */
+ 107               	.L__stack_usage = 0
+ 108               	.LVL3:
+ 254:src/morse.c   **** 		LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_OFF | HD44780_CURSOR
+ 109               		.loc 1 254 0
+ 110 0062 8CE1      		ldi r24,lo8(28)
+ 111 0064 0E94 0000 		call LCD_WriteCommand
+ 112               	.LVL4:
+ 255:src/morse.c   **** 		delay_ms(20);
+ 113               		.loc 1 255 0
+ 114 0068 8CE0      		ldi r24,lo8(12)
+ 115 006a 0E94 0000 		call LCD_WriteCommand
+ 116               	.LVL5:
+ 256:src/morse.c   **** 	}
+ 117               		.loc 1 256 0
+ 118 006e 84E1      		ldi r24,lo8(20)
+ 119 0070 90E0      		ldi r25,0
+ 120 0072 0C94 0000 		jmp delay_ms
+ 121               	.LVL6:
+ 122               		.cfi_endproc
+ 123               	.LFE25:
+ 125               	.global	LCD_move
+ 127               	LCD_move:
+ 128               	.LFB16:
+ 251:src/morse.c   **** 	if(dir =='L')				// move content to right
+ 129               		.loc 1 251 0
+ 130               		.cfi_startproc
+ 131               	.LVL7:
+ 132               	/* prologue: function */
+ 133               	/* frame size = 0 */
+ 134               	/* stack size = 0 */
+ 135               	.L__stack_usage = 0
+ 252:src/morse.c   **** 	{
+ 136               		.loc 1 252 0
+ 137 0076 8C34      		cpi r24,lo8(76)
+ 138 0078 01F4      		brne .L8
+ 139 007a 0C94 0000 		jmp LCD_move.part.0
+ 140               	.LVL8:
+ 141               	.L8:
+ 258:src/morse.c   **** 	{
+ 142               		.loc 1 258 0
+ 143 007e 8235      		cpi r24,lo8(82)
+ 144 0080 01F4      		brne .L7
+ 260:src/morse.c   **** 		LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_OFF | HD44780_CURSOR
+ 145               		.loc 1 260 0
+ 146 0082 88E1      		ldi r24,lo8(24)
+ 147               	.LVL9:
+ 148 0084 0E94 0000 		call LCD_WriteCommand
+ 149               	.LVL10:
+ 261:src/morse.c   **** 		delay_ms(20);
+ 150               		.loc 1 261 0
+ 151 0088 8CE0      		ldi r24,lo8(12)
+ 152 008a 0E94 0000 		call LCD_WriteCommand
+ 153               	.LVL11:
+ 262:src/morse.c   **** 	}
+ 154               		.loc 1 262 0
+ 155 008e 84E1      		ldi r24,lo8(20)
+ 156 0090 90E0      		ldi r25,0
+ 157 0092 0C94 0000 		jmp delay_ms
+ 158               	.LVL12:
+ 159               	.L7:
+ 160 0096 0895      		ret
+ 161               		.cfi_endproc
+ 162               	.LFE16:
+ 164               	.global	LCD_moveMode
+ 166               	LCD_moveMode:
+ 167               	.LFB17:
+ 267:src/morse.c   **** 	if (!(PINC & 0x02))			//1 button push (SW 1) - text to the left
+ 168               		.loc 1 267 0
+ 169               		.cfi_startproc
+ 170               	/* prologue: function */
+ 171               	/* frame size = 0 */
+ 172               	/* stack size = 0 */
+ 173               	.L__stack_usage = 0
+ 268:src/morse.c   **** 	{
+ 174               		.loc 1 268 0
+ 175 0098 9999      		sbic 0x13,1
+ 176 009a 00C0      		rjmp .L11
+ 270:src/morse.c   **** 		LCD_move('R');
+ 177               		.loc 1 270 0
+ 178 009c 84E6      		ldi r24,lo8(100)
+ 179 009e 90E0      		ldi r25,0
+ 180 00a0 0E94 0000 		call delay_ms
+ 181               	.LVL13:
+ 271:src/morse.c   **** 	}
+ 182               		.loc 1 271 0
+ 183 00a4 82E5      		ldi r24,lo8(82)
+ 184 00a6 0E94 0000 		call LCD_move
+ 185               	.LVL14:
+ 186               	.L11:
+ 274:src/morse.c   **** 	{
+ 187               		.loc 1 274 0
+ 188 00aa 9A99      		sbic 0x13,2
+ 189 00ac 00C0      		rjmp .L10
+ 276:src/morse.c   **** 		LCD_move('L');
+ 190               		.loc 1 276 0
+ 191 00ae 84E6      		ldi r24,lo8(100)
+ 192 00b0 90E0      		ldi r25,0
+ 193 00b2 0E94 0000 		call delay_ms
+ 194               	.LVL15:
+ 195               	.LBB12:
+ 196               	.LBB13:
+ 197 00b6 0C94 0000 		jmp LCD_move.part.0
+ 198               	.LVL16:
+ 199               	.L10:
+ 200 00ba 0895      		ret
+ 201               	.LBE13:
+ 202               	.LBE12:
+ 203               		.cfi_endproc
+ 204               	.LFE17:
+ 206               	.global	blinkLed
+ 208               	blinkLed:
+ 209               	.LFB18:
+ 282:src/morse.c   **** 	PORTC |= (1<<LED);
+ 210               		.loc 1 282 0
+ 211               		.cfi_startproc
+ 212               	.LVL17:
+ 213 00bc CF93      		push r28
+ 214               	.LCFI4:
+ 215               		.cfi_def_cfa_offset 3
+ 216               		.cfi_offset 28, -2
+ 217 00be DF93      		push r29
+ 218               	.LCFI5:
+ 219               		.cfi_def_cfa_offset 4
+ 220               		.cfi_offset 29, -3
+ 221               	/* prologue: function */
+ 222               	/* frame size = 0 */
+ 223               	/* stack size = 2 */
+ 224               	.L__stack_usage = 2
+ 225 00c0 EB01      		movw r28,r22
+ 283:src/morse.c   **** 	delay_ms(on);
+ 226               		.loc 1 283 0
+ 227 00c2 AC9A      		sbi 0x15,4
+ 284:src/morse.c   **** 	PORTC &= ~(1<<LED);
+ 228               		.loc 1 284 0
+ 229 00c4 0E94 0000 		call delay_ms
+ 230               	.LVL18:
+ 285:src/morse.c   **** 	delay_ms(off);
+ 231               		.loc 1 285 0
+ 232 00c8 AC98      		cbi 0x15,4
+ 286:src/morse.c   **** }
+ 233               		.loc 1 286 0
+ 234 00ca CE01      		movw r24,r28
+ 235               	/* epilogue start */
+ 287:src/morse.c   **** 
+ 236               		.loc 1 287 0
+ 237 00cc DF91      		pop r29
+ 238 00ce CF91      		pop r28
+ 239               	.LVL19:
+ 286:src/morse.c   **** }
+ 240               		.loc 1 286 0
+ 241 00d0 0C94 0000 		jmp delay_ms
+ 242               	.LVL20:
+ 243               		.cfi_endproc
+ 244               	.LFE18:
+ 246               	.global	broadcast
+ 248               	broadcast:
+ 249               	.LFB13:
+ 167:src/morse.c   **** 	int symbolSpace = period;
+ 250               		.loc 1 167 0
+ 251               		.cfi_startproc
+ 252               	.LVL21:
+ 253 00d4 2F92      		push r2
+ 254               	.LCFI6:
+ 255               		.cfi_def_cfa_offset 3
+ 256               		.cfi_offset 2, -2
+ 257 00d6 3F92      		push r3
+ 258               	.LCFI7:
+ 259               		.cfi_def_cfa_offset 4
+ 260               		.cfi_offset 3, -3
+ 261 00d8 4F92      		push r4
+ 262               	.LCFI8:
+ 263               		.cfi_def_cfa_offset 5
+ 264               		.cfi_offset 4, -4
+ 265 00da 5F92      		push r5
+ 266               	.LCFI9:
+ 267               		.cfi_def_cfa_offset 6
+ 268               		.cfi_offset 5, -5
+ 269 00dc 6F92      		push r6
+ 270               	.LCFI10:
+ 271               		.cfi_def_cfa_offset 7
+ 272               		.cfi_offset 6, -6
+ 273 00de 7F92      		push r7
+ 274               	.LCFI11:
+ 275               		.cfi_def_cfa_offset 8
+ 276               		.cfi_offset 7, -7
+ 277 00e0 8F92      		push r8
+ 278               	.LCFI12:
+ 279               		.cfi_def_cfa_offset 9
+ 280               		.cfi_offset 8, -8
+ 281 00e2 9F92      		push r9
+ 282               	.LCFI13:
+ 283               		.cfi_def_cfa_offset 10
+ 284               		.cfi_offset 9, -9
+ 285 00e4 AF92      		push r10
+ 286               	.LCFI14:
+ 287               		.cfi_def_cfa_offset 11
+ 288               		.cfi_offset 10, -10
+ 289 00e6 BF92      		push r11
+ 290               	.LCFI15:
+ 291               		.cfi_def_cfa_offset 12
+ 292               		.cfi_offset 11, -11
+ 293 00e8 CF92      		push r12
+ 294               	.LCFI16:
+ 295               		.cfi_def_cfa_offset 13
+ 296               		.cfi_offset 12, -12
+ 297 00ea DF92      		push r13
+ 298               	.LCFI17:
+ 299               		.cfi_def_cfa_offset 14
+ 300               		.cfi_offset 13, -13
+ 301 00ec EF92      		push r14
+ 302               	.LCFI18:
+ 303               		.cfi_def_cfa_offset 15
+ 304               		.cfi_offset 14, -14
+ 305 00ee FF92      		push r15
+ 306               	.LCFI19:
+ 307               		.cfi_def_cfa_offset 16
+ 308               		.cfi_offset 15, -15
+ 309 00f0 0F93      		push r16
+ 310               	.LCFI20:
+ 311               		.cfi_def_cfa_offset 17
+ 312               		.cfi_offset 16, -16
+ 313 00f2 1F93      		push r17
+ 314               	.LCFI21:
+ 315               		.cfi_def_cfa_offset 18
+ 316               		.cfi_offset 17, -17
+ 317 00f4 CF93      		push r28
+ 318               	.LCFI22:
+ 319               		.cfi_def_cfa_offset 19
+ 320               		.cfi_offset 28, -18
+ 321 00f6 DF93      		push r29
+ 322               	.LCFI23:
+ 323               		.cfi_def_cfa_offset 20
+ 324               		.cfi_offset 29, -19
+ 325 00f8 00D0      		rcall .
+ 326 00fa 00D0      		rcall .
+ 327               	.LCFI24:
+ 328               		.cfi_def_cfa_offset 24
+ 329 00fc CDB7      		in r28,__SP_L__
+ 330 00fe DEB7      		in r29,__SP_H__
+ 331               	.LCFI25:
+ 332               		.cfi_def_cfa_register 28
+ 333               	/* prologue: function */
+ 334               	/* frame size = 4 */
+ 335               	/* stack size = 22 */
+ 336               	.L__stack_usage = 22
+ 337 0100 8C01      		movw r16,r24
+ 338 0102 4B01      		movw r8,r22
+ 339               	.LVL22:
+ 169:src/morse.c   **** 	int charSpace = period*3;
+ 340               		.loc 1 169 0
+ 341 0104 5C01      		movw r10,r24
+ 342 0106 AA0C      		lsl r10
+ 343 0108 BB1C      		rol r11
+ 344               	.LVL23:
+ 345 010a A80E      		add r10,r24
+ 346 010c B91E      		adc r11,r25
+ 347               	.LVL24:
+ 348               	.LBB14:
+ 175:src/morse.c   **** 	{
+ 349               		.loc 1 175 0
+ 350 010e 70E0      		ldi r23,lo8(userInput)
+ 351 0110 E72E      		mov r14,r23
+ 352 0112 70E0      		ldi r23,hi8(userInput)
+ 353 0114 F72E      		mov r15,r23
+ 354               	.LBE14:
+ 173:src/morse.c   **** 	
+ 355               		.loc 1 173 0
+ 356 0116 1C82      		std Y+4,__zero_reg__
+ 357 0118 1B82      		std Y+3,__zero_reg__
+ 358               	.LBB17:
+ 359               	.LBB15:
+ 196:src/morse.c   **** 	}
+ 360               		.loc 1 196 0
+ 361 011a 2501      		movw r4,r10
+ 362 011c 481A      		sub r4,r24
+ 363 011e 590A      		sbc r5,r25
+ 364               	.LVL25:
+ 365               	.L15:
+ 366 0120 8B81      		ldd r24,Y+3
+ 367 0122 9C81      		ldd r25,Y+4
+ 368 0124 880F      		lsl r24
+ 369 0126 991F      		rol r25
+ 370               	.LBE15:
+ 175:src/morse.c   **** 	{
+ 371               		.loc 1 175 0 discriminator 1
+ 372 0128 9701      		movw r18,r14
+ 373 012a 2050      		subi r18,lo8(userInput)
+ 374 012c 3040      		sbci r19,hi8(userInput)
+ 375               	.LVL26:
+ 376 012e 2815      		cp r18,r8
+ 377 0130 3905      		cpc r19,r9
+ 378 0132 04F0      		brlt .+2
+ 379 0134 00C0      		rjmp .L19
+ 380 0136 2B80      		ldd r2,Y+3
+ 381 0138 3C80      		ldd r3,Y+4
+ 382 013a FC01      		movw r30,r24
+ 383 013c E050      		subi r30,lo8(-(morseInput))
+ 384 013e F040      		sbci r31,hi8(-(morseInput))
+ 385 0140 3F01      		movw r6,r30
+ 175:src/morse.c   **** 	{
+ 386               		.loc 1 175 0 is_stmt 0
+ 387 0142 C12C      		mov r12,__zero_reg__
+ 388 0144 D12C      		mov r13,__zero_reg__
+ 389               	.LVL27:
+ 390               	.L20:
+ 391 0146 2B81      		ldd r18,Y+3
+ 392 0148 3C81      		ldd r19,Y+4
+ 393 014a 2219      		sub r18,r2
+ 394 014c 3309      		sbc r19,r3
+ 395               	.LVL28:
+ 396               	.LBB16:
+ 178:src/morse.c   **** 		{
+ 397               		.loc 1 178 0 is_stmt 1
+ 398 014e F701      		movw r30,r14
+ 399 0150 8081      		ld r24,Z
+ 400 0152 90E0      		ldi r25,0
+ 401 0154 8156      		subi r24,97
+ 402 0156 9109      		sbc r25,__zero_reg__
+ 403 0158 47E0      		ldi r20,lo8(7)
+ 404 015a 489F      		mul r20,r24
+ 405 015c F001      		movw r30,r0
+ 406 015e 499F      		mul r20,r25
+ 407 0160 F00D      		add r31,r0
+ 408 0162 1124      		clr __zero_reg__
+ 409 0164 E20F      		add r30,r18
+ 410 0166 F31F      		adc r31,r19
+ 411 0168 EE0F      		lsl r30
+ 412 016a FF1F      		rol r31
+ 413 016c E050      		subi r30,lo8(-(morseTable))
+ 414 016e F040      		sbci r31,hi8(-(morseTable))
+ 415 0170 8081      		ld r24,Z
+ 416 0172 9181      		ldd r25,Z+1
+ 417 0174 0297      		sbiw r24,2
+ 418 0176 01F4      		brne .+2
+ 419 0178 00C0      		rjmp .L22
+ 180:src/morse.c   **** 			if(morseTable[userInput[i]-97][j] == 0)	//1-dot (in table 0-dot)
+ 420               		.loc 1 180 0
+ 421 017a 60E0      		ldi r22,0
+ 422 017c 8B81      		ldd r24,Y+3
+ 423 017e 2983      		std Y+1,r18
+ 424 0180 3A83      		std Y+2,r19
+ 425 0182 0E94 0000 		call LCD_GoTo
+ 426               	.LVL29:
+ 181:src/morse.c   **** 			{										//dot
+ 427               		.loc 1 181 0
+ 428 0186 F701      		movw r30,r14
+ 429 0188 8081      		ld r24,Z
+ 430 018a 90E0      		ldi r25,0
+ 431 018c 8156      		subi r24,97
+ 432 018e 9109      		sbc r25,__zero_reg__
+ 433 0190 47E0      		ldi r20,lo8(7)
+ 434 0192 489F      		mul r20,r24
+ 435 0194 F001      		movw r30,r0
+ 436 0196 499F      		mul r20,r25
+ 437 0198 F00D      		add r31,r0
+ 438 019a 1124      		clr __zero_reg__
+ 439 019c 2981      		ldd r18,Y+1
+ 440 019e 3A81      		ldd r19,Y+2
+ 441 01a0 E20F      		add r30,r18
+ 442 01a2 F31F      		adc r31,r19
+ 443 01a4 EE0F      		lsl r30
+ 444 01a6 FF1F      		rol r31
+ 445 01a8 E050      		subi r30,lo8(-(morseTable))
+ 446 01aa F040      		sbci r31,hi8(-(morseTable))
+ 447 01ac 8081      		ld r24,Z
+ 448 01ae 9181      		ldd r25,Z+1
+ 449 01b0 0097      		sbiw r24,0
+ 450 01b2 01F4      		brne .L16
+ 183:src/morse.c   **** 				morseInput[pos] = 1;
+ 451               		.loc 1 183 0
+ 452 01b4 81E3      		ldi r24,lo8(49)
+ 453 01b6 0E94 0000 		call LCD_WriteData
+ 454               	.LVL30:
+ 455 01ba F301      		movw r30,r6
+ 456 01bc EC0D      		add r30,r12
+ 457 01be FD1D      		adc r31,r13
+ 184:src/morse.c   **** 				blinkLed(period,symbolSpace);
+ 458               		.loc 1 184 0
+ 459 01c0 81E0      		ldi r24,lo8(1)
+ 460 01c2 90E0      		ldi r25,0
+ 461 01c4 9183      		std Z+1,r25
+ 462 01c6 8083      		st Z,r24
+ 185:src/morse.c   **** 			}
+ 463               		.loc 1 185 0
+ 464 01c8 B801      		movw r22,r16
+ 465 01ca C801      		movw r24,r16
+ 466 01cc 00C0      		rjmp .L21
+ 467               	.L16:
+ 187:src/morse.c   **** 			{										//dash
+ 468               		.loc 1 187 0
+ 469 01ce 0197      		sbiw r24,1
+ 470 01d0 01F4      		brne .L17
+ 189:src/morse.c   **** 				morseInput[pos] = 0;
+ 471               		.loc 1 189 0
+ 472 01d2 80E3      		ldi r24,lo8(48)
+ 473 01d4 0E94 0000 		call LCD_WriteData
+ 474               	.LVL31:
+ 475 01d8 F301      		movw r30,r6
+ 476 01da EC0D      		add r30,r12
+ 477 01dc FD1D      		adc r31,r13
+ 190:src/morse.c   **** 				blinkLed(dashSpace,symbolSpace);
+ 478               		.loc 1 190 0
+ 479 01de 1182      		std Z+1,__zero_reg__
+ 480 01e0 1082      		st Z,__zero_reg__
+ 191:src/morse.c   **** 			}
+ 481               		.loc 1 191 0
+ 482 01e2 B801      		movw r22,r16
+ 483 01e4 C501      		movw r24,r10
+ 484               	.L21:
+ 485 01e6 0E94 0000 		call blinkLed
+ 486               	.LVL32:
+ 487               	.L17:
+ 194:src/morse.c   **** 		}
+ 488               		.loc 1 194 0
+ 489 01ea 2B81      		ldd r18,Y+3
+ 490 01ec 3C81      		ldd r19,Y+4
+ 491 01ee 2F5F      		subi r18,-1
+ 492 01f0 3F4F      		sbci r19,-1
+ 493 01f2 3C83      		std Y+4,r19
+ 494 01f4 2B83      		std Y+3,r18
+ 495               	.LVL33:
+ 496 01f6 32E0      		ldi r19,2
+ 497 01f8 C30E      		add r12,r19
+ 498 01fa D11C      		adc r13,__zero_reg__
+ 499 01fc 00C0      		rjmp .L20
+ 500               	.LVL34:
+ 501               	.L22:
+ 196:src/morse.c   **** 	}
+ 502               		.loc 1 196 0 discriminator 2
+ 503 01fe C201      		movw r24,r4
+ 504 0200 0E94 0000 		call delay_ms
+ 505               	.LVL35:
+ 506 0204 8FEF      		ldi r24,-1
+ 507 0206 E81A      		sub r14,r24
+ 508 0208 F80A      		sbc r15,r24
+ 509               	.LVL36:
+ 510 020a 00C0      		rjmp .L15
+ 511               	.LVL37:
+ 512               	.L19:
+ 513               	.LBE16:
+ 514               	.LBE17:
+ 198:src/morse.c   **** }
+ 515               		.loc 1 198 0
+ 516 020c FC01      		movw r30,r24
+ 517 020e E050      		subi r30,lo8(-(morseInput))
+ 518 0210 F040      		sbci r31,hi8(-(morseInput))
+ 519 0212 22E0      		ldi r18,lo8(2)
+ 520 0214 30E0      		ldi r19,0
+ 521               	.LVL38:
+ 522 0216 3183      		std Z+1,r19
+ 523 0218 2083      		st Z,r18
+ 524               	/* epilogue start */
+ 199:src/morse.c   **** 
+ 525               		.loc 1 199 0
+ 526 021a 0F90      		pop __tmp_reg__
+ 527 021c 0F90      		pop __tmp_reg__
+ 528 021e 0F90      		pop __tmp_reg__
+ 529 0220 0F90      		pop __tmp_reg__
+ 530 0222 DF91      		pop r29
+ 531 0224 CF91      		pop r28
+ 532               	.LVL39:
+ 533 0226 1F91      		pop r17
+ 534               	.LVL40:
+ 535 0228 0F91      		pop r16
+ 536               	.LVL41:
+ 537 022a FF90      		pop r15
+ 538               	.LVL42:
+ 539 022c EF90      		pop r14
+ 540               	.LVL43:
+ 541 022e DF90      		pop r13
+ 542               	.LVL44:
+ 543 0230 CF90      		pop r12
+ 544               	.LVL45:
+ 545 0232 BF90      		pop r11
+ 546               	.LVL46:
+ 547 0234 AF90      		pop r10
+ 548               	.LVL47:
+ 549 0236 9F90      		pop r9
+ 550               	.LVL48:
+ 551 0238 8F90      		pop r8
+ 552               	.LVL49:
+ 553 023a 7F90      		pop r7
+ 554               	.LVL50:
+ 555 023c 6F90      		pop r6
+ 556               	.LVL51:
+ 557 023e 5F90      		pop r5
+ 558               	.LVL52:
+ 559 0240 4F90      		pop r4
+ 560               	.LVL53:
+ 561 0242 3F90      		pop r3
+ 562               	.LVL54:
+ 563 0244 2F90      		pop r2
+ 564               	.LVL55:
+ 565 0246 0895      		ret
+ 566               		.cfi_endproc
+ 567               	.LFE13:
+ 569               		.section	.rodata.str1.1,"aMS",@progbits,1
+ 570               	.LC0:
+ 571 0000 2020 2020 		.string	"        "
+ 571      2020 2020 
+ 571      00
+ 572               		.text
+ 573               	.global	LCD_clearLine
+ 575               	LCD_clearLine:
+ 576               	.LFB20:
+ 295:src/morse.c   **** 
+ 296:src/morse.c   **** void LCD_clearLine(int nr)		// clear line 'nr' 
+ 297:src/morse.c   **** {
+ 577               		.loc 1 297 0
+ 578               		.cfi_startproc
+ 579               	.LVL56:
+ 580               	/* prologue: function */
+ 581               	/* frame size = 0 */
+ 582               	/* stack size = 0 */
+ 583               	.L__stack_usage = 0
+ 298:src/morse.c   **** 		LCD_GoTo(0,nr);
+ 584               		.loc 1 298 0
+ 585 0248 682F      		mov r22,r24
+ 586 024a 80E0      		ldi r24,0
+ 587               	.LVL57:
+ 588 024c 0E94 0000 		call LCD_GoTo
+ 589               	.LVL58:
+ 299:src/morse.c   **** 		LCD_WriteText("        ");
+ 590               		.loc 1 299 0
+ 591 0250 80E0      		ldi r24,lo8(.LC0)
+ 592 0252 90E0      		ldi r25,hi8(.LC0)
+ 593 0254 0C94 0000 		jmp LCD_WriteText
+ 594               	.LVL59:
+ 595               		.cfi_endproc
+ 596               	.LFE20:
+ 598               		.section	.rodata.str1.1
+ 599               	.LC1:
+ 600 0009 706F 7774 		.string	"powtorz?"
+ 600      6F72 7A3F 
+ 600      00
+ 601               	.LC2:
+ 602 0012 5420 2020 		.string	"T   N   "
+ 602      4E20 2020 
+ 602      00
+ 603               		.text
+ 604               	.global	dial
+ 606               	dial:
+ 607               	.LFB12:
+  90:src/morse.c   **** 	if(btnFlag == 0)
+ 608               		.loc 1 90 0
+ 609               		.cfi_startproc
+ 610 0258 0F93      		push r16
+ 611               	.LCFI26:
+ 612               		.cfi_def_cfa_offset 3
+ 613               		.cfi_offset 16, -2
+ 614 025a 1F93      		push r17
+ 615               	.LCFI27:
+ 616               		.cfi_def_cfa_offset 4
+ 617               		.cfi_offset 17, -3
+ 618 025c CF93      		push r28
+ 619               	.LCFI28:
+ 620               		.cfi_def_cfa_offset 5
+ 621               		.cfi_offset 28, -4
+ 622 025e DF93      		push r29
+ 623               	.LCFI29:
+ 624               		.cfi_def_cfa_offset 6
+ 625               		.cfi_offset 29, -5
+ 626               	/* prologue: function */
+ 627               	/* frame size = 0 */
+ 628               	/* stack size = 4 */
+ 629               	.L__stack_usage = 4
+  91:src/morse.c   **** 	{
+ 630               		.loc 1 91 0
+ 631 0260 8091 0000 		lds r24,btnFlag
+ 632 0264 9091 0000 		lds r25,btnFlag+1
+ 633 0268 892B      		or r24,r25
+ 634 026a 01F4      		brne .L25
+  93:src/morse.c   **** 		if(asciiNum < 97) 	encoderCount = 25;		//only letters available
+ 635               		.loc 1 93 0
+ 636 026c 8091 0000 		lds r24,encoderCount
+ 637 0270 9091 0000 		lds r25,encoderCount+1
+ 638 0274 8F59      		subi r24,-97
+ 639 0276 9F4F      		sbci r25,-1
+ 640 0278 9093 0000 		sts asciiNum+1,r25
+ 641 027c 8093 0000 		sts asciiNum,r24
+  94:src/morse.c   **** 		if(asciiNum > 122)	encoderCount = 0;		//
+ 642               		.loc 1 94 0
+ 643 0280 8136      		cpi r24,97
+ 644 0282 9105      		cpc r25,__zero_reg__
+ 645 0284 04F4      		brge .L26
+  94:src/morse.c   **** 		if(asciiNum > 122)	encoderCount = 0;		//
+ 646               		.loc 1 94 0 is_stmt 0 discriminator 1
+ 647 0286 89E1      		ldi r24,lo8(25)
+ 648 0288 90E0      		ldi r25,0
+ 649 028a 9093 0000 		sts encoderCount+1,r25
+ 650 028e 8093 0000 		sts encoderCount,r24
+ 651 0292 00C0      		rjmp .L27
+ 652               	.L26:
+  95:src/morse.c   **** 
+ 653               		.loc 1 95 0 is_stmt 1
+ 654 0294 8B37      		cpi r24,123
+ 655 0296 9105      		cpc r25,__zero_reg__
+ 656 0298 04F0      		brlt .L27
+  95:src/morse.c   **** 
+ 657               		.loc 1 95 0 is_stmt 0 discriminator 1
+ 658 029a 1092 0000 		sts encoderCount+1,__zero_reg__
+ 659 029e 1092 0000 		sts encoderCount,__zero_reg__
+ 660               	.L27:
+  97:src/morse.c   **** 		LCD_WriteData(asciiNum);	//letter selection
+ 661               		.loc 1 97 0 is_stmt 1
+ 662 02a2 60E0      		ldi r22,0
+ 663 02a4 8091 0000 		lds r24,lcdPos
+ 664 02a8 0E94 0000 		call LCD_GoTo
+ 665               	.LVL60:
+  98:src/morse.c   **** 		LCD_GoTo(lcdPos,1);
+ 666               		.loc 1 98 0
+ 667 02ac 8091 0000 		lds r24,asciiNum
+ 668 02b0 0E94 0000 		call LCD_WriteData
+ 669               	.LVL61:
+  99:src/morse.c   **** 		LCD_WriteData(94);			//cursor pointer
+ 670               		.loc 1 99 0
+ 671 02b4 61E0      		ldi r22,lo8(1)
+ 672 02b6 8091 0000 		lds r24,lcdPos
+ 673 02ba 0E94 0000 		call LCD_GoTo
+ 674               	.LVL62:
+ 100:src/morse.c   **** 	}
+ 675               		.loc 1 100 0
+ 676 02be 8EE5      		ldi r24,lo8(94)
+ 677 02c0 0E94 0000 		call LCD_WriteData
+ 678               	.LVL63:
+ 679               	.L25:
+ 680 02c4 2091 0000 		lds r18,btnFlag
+ 681 02c8 3091 0000 		lds r19,btnFlag+1
+ 109:src/morse.c   **** 	{
+ 682               		.loc 1 109 0
+ 683 02cc CB99      		sbic 0x19,3
+ 684 02ce 00C0      		rjmp .L28
+ 109:src/morse.c   **** 	{
+ 685               		.loc 1 109 0 is_stmt 0 discriminator 1
+ 686 02d0 C901      		movw r24,r18
+ 687 02d2 0097      		sbiw r24,0
+ 688 02d4 01F4      		brne .L28
+ 111:src/morse.c   **** 		btnFlag = 1;						//button pressed flag
+ 689               		.loc 1 111 0 is_stmt 1
+ 690 02d6 28EC      		ldi r18,lo8(-56)
+ 691 02d8 30E0      		ldi r19,0
+ 692 02da 3093 0000 		sts Timer1+1,r19
+ 693 02de 2093 0000 		sts Timer1,r18
+ 112:src/morse.c   **** 	}
+ 694               		.loc 1 112 0
+ 695 02e2 21E0      		ldi r18,lo8(1)
+ 696 02e4 30E0      		ldi r19,0
+ 697 02e6 3093 0000 		sts btnFlag+1,r19
+ 698 02ea 2093 0000 		sts btnFlag,r18
+ 699 02ee 00C0      		rjmp .L29
+ 700               	.L28:
+ 114:src/morse.c   **** 	{
+ 701               		.loc 1 114 0
+ 702 02f0 CB9B      		sbis 0x19,3
+ 703 02f2 00C0      		rjmp .L30
+ 114:src/morse.c   **** 	{
+ 704               		.loc 1 114 0 is_stmt 0 discriminator 1
+ 705 02f4 2130      		cpi r18,1
+ 706 02f6 3105      		cpc r19,__zero_reg__
+ 707 02f8 01F4      		brne .L30
+ 116:src/morse.c   **** 		lcdPos++;						// to the memory
+ 708               		.loc 1 116 0 is_stmt 1
+ 709 02fa 8091 0000 		lds r24,lcdPos
+ 710 02fe 9091 0000 		lds r25,lcdPos+1
+ 711 0302 FC01      		movw r30,r24
+ 712 0304 E050      		subi r30,lo8(-(userInput))
+ 713 0306 F040      		sbci r31,hi8(-(userInput))
+ 714 0308 2091 0000 		lds r18,asciiNum
+ 715 030c 2083      		st Z,r18
+ 117:src/morse.c   **** 		delay_ms(100);
+ 716               		.loc 1 117 0
+ 717 030e 0196      		adiw r24,1
+ 718 0310 9093 0000 		sts lcdPos+1,r25
+ 719 0314 8093 0000 		sts lcdPos,r24
+ 118:src/morse.c   **** 		encoderCount = 0;		//encoder counter back to 'a'
+ 720               		.loc 1 118 0
+ 721 0318 84E6      		ldi r24,lo8(100)
+ 722 031a 90E0      		ldi r25,0
+ 723 031c 0E94 0000 		call delay_ms
+ 724               	.LVL64:
+ 119:src/morse.c   **** 		LCD_clearLine(1);
+ 725               		.loc 1 119 0
+ 726 0320 1092 0000 		sts encoderCount+1,__zero_reg__
+ 727 0324 1092 0000 		sts encoderCount,__zero_reg__
+ 120:src/morse.c   **** 		btnFlag = 0;			//button released flag
+ 728               		.loc 1 120 0
+ 729 0328 81E0      		ldi r24,lo8(1)
+ 730 032a 90E0      		ldi r25,0
+ 731 032c 0E94 0000 		call LCD_clearLine
+ 732               	.LVL65:
+ 121:src/morse.c   **** 		Timer1 = 0;				//timer reset
+ 733               		.loc 1 121 0
+ 734 0330 1092 0000 		sts btnFlag+1,__zero_reg__
+ 735 0334 1092 0000 		sts btnFlag,__zero_reg__
+ 122:src/morse.c   **** 	}
+ 736               		.loc 1 122 0
+ 737 0338 1092 0000 		sts Timer1+1,__zero_reg__
+ 738 033c 1092 0000 		sts Timer1,__zero_reg__
+ 739 0340 00C0      		rjmp .L40
+ 740               	.L30:
+ 124:src/morse.c   **** 	{
+ 741               		.loc 1 124 0
+ 742 0342 CB99      		sbic 0x19,3
+ 743 0344 00C0      		rjmp .L31
+ 124:src/morse.c   **** 	{
+ 744               		.loc 1 124 0 is_stmt 0 discriminator 1
+ 745 0346 2130      		cpi r18,1
+ 746 0348 3105      		cpc r19,__zero_reg__
+ 747 034a 01F0      		breq .+2
+ 748 034c 00C0      		rjmp .L31
+ 124:src/morse.c   **** 	{
+ 749               		.loc 1 124 0 discriminator 2
+ 750 034e 8091 0000 		lds r24,Timer1
+ 751 0352 9091 0000 		lds r25,Timer1+1
+ 752 0356 892B      		or r24,r25
+ 753 0358 01F0      		breq .+2
+ 754 035a 00C0      		rjmp .L31
+ 126:src/morse.c   **** 		userInput[lcdPos] = 'E';	//indicating the end of message
+ 755               		.loc 1 126 0 is_stmt 1
+ 756 035c 0E94 0000 		call LCD_Clear
+ 757               	.LVL66:
+ 127:src/morse.c   **** 		for(int i=0;i<lcdPos;i++)	//message display on scnd line
+ 758               		.loc 1 127 0
+ 759 0360 E091 0000 		lds r30,lcdPos
+ 760 0364 F091 0000 		lds r31,lcdPos+1
+ 761 0368 E050      		subi r30,lo8(-(userInput))
+ 762 036a F040      		sbci r31,hi8(-(userInput))
+ 763 036c 85E4      		ldi r24,lo8(69)
+ 764 036e 8083      		st Z,r24
+ 765               	.LVL67:
+ 766 0370 00E0      		ldi r16,lo8(userInput)
+ 767 0372 10E0      		ldi r17,hi8(userInput)
+ 768               	.LBB18:
+ 128:src/morse.c   **** 		{
+ 769               		.loc 1 128 0
+ 770 0374 C0E0      		ldi r28,0
+ 771 0376 D0E0      		ldi r29,0
+ 772               	.LVL68:
+ 773               	.L32:
+ 128:src/morse.c   **** 		{
+ 774               		.loc 1 128 0 is_stmt 0 discriminator 1
+ 775 0378 8091 0000 		lds r24,lcdPos
+ 776 037c 9091 0000 		lds r25,lcdPos+1
+ 777 0380 C817      		cp r28,r24
+ 778 0382 D907      		cpc r29,r25
+ 779 0384 04F4      		brge .L41
+ 130:src/morse.c   **** 			LCD_WriteData(userInput[i]);
+ 780               		.loc 1 130 0 is_stmt 1 discriminator 3
+ 781 0386 61E0      		ldi r22,lo8(1)
+ 782 0388 8C2F      		mov r24,r28
+ 783 038a 0E94 0000 		call LCD_GoTo
+ 784               	.LVL69:
+ 131:src/morse.c   **** 		}
+ 785               		.loc 1 131 0 discriminator 3
+ 786 038e F801      		movw r30,r16
+ 787 0390 8191      		ld r24,Z+
+ 788 0392 8F01      		movw r16,r30
+ 789 0394 0E94 0000 		call LCD_WriteData
+ 790               	.LVL70:
+ 128:src/morse.c   **** 		{
+ 791               		.loc 1 128 0 discriminator 3
+ 792 0398 2196      		adiw r28,1
+ 793               	.LVL71:
+ 794 039a 00C0      		rjmp .L32
+ 795               	.L41:
+ 796               	.LBE18:
+ 135:src/morse.c   **** 		delay_ms(1000);
+ 797               		.loc 1 135 0
+ 798 039c 1092 0000 		sts btnFlag+1,__zero_reg__
+ 799 03a0 1092 0000 		sts btnFlag,__zero_reg__
+ 136:src/morse.c   **** 		broadcast((2400/wpmSpeed),lcdPos);	//broadcatsing message at arg1 speed - pause between elements 
+ 800               		.loc 1 136 0
+ 801 03a4 88EE      		ldi r24,lo8(-24)
+ 802 03a6 93E0      		ldi r25,lo8(3)
+ 803 03a8 0E94 0000 		call delay_ms
+ 804               	.LVL72:
+ 137:src/morse.c   **** 											// and of arg2 length
+ 805               		.loc 1 137 0
+ 806 03ac 2091 0000 		lds r18,lcdPos
+ 807 03b0 3091 0000 		lds r19,lcdPos+1
+ 808 03b4 6091 0000 		lds r22,wpmSpeed
+ 809 03b8 7091 0000 		lds r23,wpmSpeed+1
+ 810 03bc 80E6      		ldi r24,lo8(96)
+ 811 03be 99E0      		ldi r25,lo8(9)
+ 812 03c0 0E94 0000 		call __divmodhi4
+ 813 03c4 CB01      		movw r24,r22
+ 814 03c6 B901      		movw r22,r18
+ 815 03c8 0E94 0000 		call broadcast
+ 816               	.LVL73:
+ 139:src/morse.c   **** 		btnFlag = 2;			//end of transmission
+ 817               		.loc 1 139 0
+ 818 03cc 8CEB      		ldi r24,lo8(-68)
+ 819 03ce 92E0      		ldi r25,lo8(2)
+ 820 03d0 0E94 0000 		call delay_ms
+ 821               	.LVL74:
+ 140:src/morse.c   **** 	}
+ 822               		.loc 1 140 0
+ 823 03d4 82E0      		ldi r24,lo8(2)
+ 824 03d6 90E0      		ldi r25,0
+ 825 03d8 9093 0000 		sts btnFlag+1,r25
+ 826 03dc 8093 0000 		sts btnFlag,r24
+ 827 03e0 00C0      		rjmp .L40
+ 828               	.LVL75:
+ 829               	.L31:
+ 142:src/morse.c   **** 	{
+ 830               		.loc 1 142 0
+ 831 03e2 2230      		cpi r18,2
+ 832 03e4 3105      		cpc r19,__zero_reg__
+ 833 03e6 01F4      		brne .L40
+ 144:src/morse.c   **** 		LCD_WriteText("powtorz?");
+ 834               		.loc 1 144 0
+ 835 03e8 0E94 0000 		call LCD_Home
+ 836               	.LVL76:
+ 145:src/morse.c   **** 		LCD_GoTo(0,1);
+ 837               		.loc 1 145 0
+ 838 03ec 80E0      		ldi r24,lo8(.LC1)
+ 839 03ee 90E0      		ldi r25,hi8(.LC1)
+ 840 03f0 0E94 0000 		call LCD_WriteText
+ 841               	.LVL77:
+ 146:src/morse.c   **** 		LCD_WriteText("T   N   ");
+ 842               		.loc 1 146 0
+ 843 03f4 61E0      		ldi r22,lo8(1)
+ 844 03f6 80E0      		ldi r24,0
+ 845 03f8 0E94 0000 		call LCD_GoTo
+ 846               	.LVL78:
+ 147:src/morse.c   **** 		if(!(PINC & 0x02))		//SW 1
+ 847               		.loc 1 147 0
+ 848 03fc 80E0      		ldi r24,lo8(.LC2)
+ 849 03fe 90E0      		ldi r25,hi8(.LC2)
+ 850 0400 0E94 0000 		call LCD_WriteText
+ 851               	.LVL79:
+ 148:src/morse.c   **** 		{
+ 852               		.loc 1 148 0
+ 853 0404 9999      		sbic 0x13,1
+ 854 0406 00C0      		rjmp .L35
+ 150:src/morse.c   **** 			delay_ms(500);
+ 855               		.loc 1 150 0
+ 856 0408 0E94 0000 		call LCD_Clear
+ 857               	.LVL80:
+ 151:src/morse.c   **** 			broadcast((2400/wpmSpeed),lcdPos);
+ 858               		.loc 1 151 0
+ 859 040c 84EF      		ldi r24,lo8(-12)
+ 860 040e 91E0      		ldi r25,lo8(1)
+ 861 0410 0E94 0000 		call delay_ms
+ 862               	.LVL81:
+ 152:src/morse.c   **** 		}
+ 863               		.loc 1 152 0
+ 864 0414 2091 0000 		lds r18,lcdPos
+ 865 0418 3091 0000 		lds r19,lcdPos+1
+ 866 041c 6091 0000 		lds r22,wpmSpeed
+ 867 0420 7091 0000 		lds r23,wpmSpeed+1
+ 868 0424 80E6      		ldi r24,lo8(96)
+ 869 0426 99E0      		ldi r25,lo8(9)
+ 870 0428 0E94 0000 		call __divmodhi4
+ 871 042c CB01      		movw r24,r22
+ 872 042e B901      		movw r22,r18
+ 873 0430 0E94 0000 		call broadcast
+ 874               	.LVL82:
+ 875               	.L40:
+ 163:src/morse.c   **** }
+ 876               		.loc 1 163 0
+ 877 0434 80E0      		ldi r24,0
+ 878 0436 90E0      		ldi r25,0
+ 879 0438 00C0      		rjmp .L29
+ 880               	.L35:
+ 154:src/morse.c   **** 		{
+ 881               		.loc 1 154 0
+ 882 043a 9A99      		sbic 0x13,2
+ 883 043c 00C0      		rjmp .L40
+ 156:src/morse.c   **** 			btnFlag = 0;
+ 884               		.loc 1 156 0
+ 885 043e 1092 0000 		sts lcdPos+1,__zero_reg__
+ 886 0442 1092 0000 		sts lcdPos,__zero_reg__
+ 157:src/morse.c   **** 			return 1;
+ 887               		.loc 1 157 0
+ 888 0446 1092 0000 		sts btnFlag+1,__zero_reg__
+ 889 044a 1092 0000 		sts btnFlag,__zero_reg__
+ 158:src/morse.c   **** 		}
+ 890               		.loc 1 158 0
+ 891 044e 81E0      		ldi r24,lo8(1)
+ 892 0450 90E0      		ldi r25,0
+ 893               	.L29:
+ 894               	/* epilogue start */
+ 164:src/morse.c   **** 
+ 895               		.loc 1 164 0
+ 896 0452 DF91      		pop r29
+ 897 0454 CF91      		pop r28
+ 898 0456 1F91      		pop r17
+ 899 0458 0F91      		pop r16
+ 900 045a 0895      		ret
+ 901               		.cfi_endproc
+ 902               	.LFE12:
+ 904               		.section	.rodata.str1.1
+ 905               	.LC3:
+ 906 001b 6272 616B 		.string	"brak"
+ 906      00
+ 907               	.LC4:
+ 908 0020 6461 6E79 		.string	"danych"
+ 908      6368 00
+ 909               		.text
+ 910               	.global	messageDisplay
+ 912               	messageDisplay:
+ 913               	.LFB15:
+ 221:src/morse.c   **** 	LCD_clearLine(0);
+ 914               		.loc 1 221 0
+ 915               		.cfi_startproc
+ 916 045c EF92      		push r14
+ 917               	.LCFI30:
+ 918               		.cfi_def_cfa_offset 3
+ 919               		.cfi_offset 14, -2
+ 920 045e FF92      		push r15
+ 921               	.LCFI31:
+ 922               		.cfi_def_cfa_offset 4
+ 923               		.cfi_offset 15, -3
+ 924 0460 0F93      		push r16
+ 925               	.LCFI32:
+ 926               		.cfi_def_cfa_offset 5
+ 927               		.cfi_offset 16, -4
+ 928 0462 1F93      		push r17
+ 929               	.LCFI33:
+ 930               		.cfi_def_cfa_offset 6
+ 931               		.cfi_offset 17, -5
+ 932 0464 CF93      		push r28
+ 933               	.LCFI34:
+ 934               		.cfi_def_cfa_offset 7
+ 935               		.cfi_offset 28, -6
+ 936 0466 DF93      		push r29
+ 937               	.LCFI35:
+ 938               		.cfi_def_cfa_offset 8
+ 939               		.cfi_offset 29, -7
+ 940               	/* prologue: function */
+ 941               	/* frame size = 0 */
+ 942               	/* stack size = 6 */
+ 943               	.L__stack_usage = 6
+ 222:src/morse.c   **** 	LCD_clearLine(1);
+ 944               		.loc 1 222 0
+ 945 0468 80E0      		ldi r24,0
+ 946 046a 90E0      		ldi r25,0
+ 947 046c 0E94 0000 		call LCD_clearLine
+ 948               	.LVL83:
+ 223:src/morse.c   **** 	
+ 949               		.loc 1 223 0
+ 950 0470 81E0      		ldi r24,lo8(1)
+ 951 0472 90E0      		ldi r25,0
+ 952 0474 0E94 0000 		call LCD_clearLine
+ 953               	.LVL84:
+ 225:src/morse.c   **** 	{								// if input beyond ascii alphabet range
+ 954               		.loc 1 225 0
+ 955 0478 8091 0000 		lds r24,userInput
+ 956 047c 8156      		subi r24,lo8(-(-97))
+ 957 047e 8A31      		cpi r24,lo8(26)
+ 958 0480 00F4      		brsh .L43
+ 959 0482 C0E0      		ldi r28,lo8(morseInput)
+ 960 0484 D0E0      		ldi r29,hi8(morseInput)
+ 961 0486 10E0      		ldi r17,0
+ 962 0488 00C0      		rjmp .L44
+ 963               	.L43:
+ 227:src/morse.c   **** 		LCD_WriteText("brak");
+ 964               		.loc 1 227 0
+ 965 048a 0E94 0000 		call LCD_Home
+ 966               	.LVL85:
+ 228:src/morse.c   **** 		LCD_GoTo(0,1);
+ 967               		.loc 1 228 0
+ 968 048e 80E0      		ldi r24,lo8(.LC3)
+ 969 0490 90E0      		ldi r25,hi8(.LC3)
+ 970 0492 0E94 0000 		call LCD_WriteText
+ 971               	.LVL86:
+ 229:src/morse.c   **** 		LCD_WriteText("danych");
+ 972               		.loc 1 229 0
+ 973 0496 61E0      		ldi r22,lo8(1)
+ 974 0498 80E0      		ldi r24,0
+ 975 049a 0E94 0000 		call LCD_GoTo
+ 976               	.LVL87:
+ 230:src/morse.c   **** 		return;
+ 977               		.loc 1 230 0
+ 978 049e 80E0      		ldi r24,lo8(.LC4)
+ 979 04a0 90E0      		ldi r25,hi8(.LC4)
+ 980               	/* epilogue start */
+ 248:src/morse.c   **** 
+ 981               		.loc 1 248 0
+ 982 04a2 DF91      		pop r29
+ 983 04a4 CF91      		pop r28
+ 984 04a6 1F91      		pop r17
+ 985 04a8 0F91      		pop r16
+ 986 04aa FF90      		pop r15
+ 987 04ac EF90      		pop r14
+ 230:src/morse.c   **** 		return;
+ 988               		.loc 1 230 0
+ 989 04ae 0C94 0000 		jmp LCD_WriteText
+ 990               	.LVL88:
+ 991               	.L44:
+ 992 04b2 7E01      		movw r14,r28
+ 235:src/morse.c   **** 	{							// tab content until '2'
+ 993               		.loc 1 235 0
+ 994 04b4 8881      		ld r24,Y
+ 995 04b6 9981      		ldd r25,Y+1
+ 996 04b8 0297      		sbiw r24,2
+ 997 04ba 01F0      		breq .L48
+ 237:src/morse.c   **** 		LCD_WriteData(morseInput[j]+48);
+ 998               		.loc 1 237 0
+ 999 04bc 60E0      		ldi r22,0
+ 1000 04be 812F      		mov r24,r17
+ 1001 04c0 0E94 0000 		call LCD_GoTo
+ 1002               	.LVL89:
+ 1003 04c4 2296      		adiw r28,2
+ 238:src/morse.c   **** 		j++;
+ 1004               		.loc 1 238 0
+ 1005 04c6 F701      		movw r30,r14
+ 1006 04c8 8081      		ld r24,Z
+ 1007 04ca 805D      		subi r24,lo8(-(48))
+ 1008 04cc 0E94 0000 		call LCD_WriteData
+ 1009               	.LVL90:
+ 1010 04d0 1F5F      		subi r17,lo8(-(1))
+ 1011 04d2 00C0      		rjmp .L44
+ 1012               	.L48:
+ 1013 04d4 80E0      		ldi r24,lo8(userInput)
+ 1014 04d6 E82E      		mov r14,r24
+ 1015 04d8 80E0      		ldi r24,hi8(userInput)
+ 1016 04da F82E      		mov r15,r24
+ 235:src/morse.c   **** 	{							// tab content until '2'
+ 1017               		.loc 1 235 0
+ 1018 04dc E701      		movw r28,r14
+ 1019               	.L46:
+ 1020               	.LVL91:
+ 1021 04de 8E01      		movw r16,r28
+ 242:src/morse.c   **** 	{							// tab content until 'E'
+ 1022               		.loc 1 242 0
+ 1023 04e0 8881      		ld r24,Y
+ 1024 04e2 8534      		cpi r24,lo8(69)
+ 1025 04e4 01F0      		breq .L49
+ 244:src/morse.c   **** 		LCD_WriteData(userInput[k]);
+ 1026               		.loc 1 244 0
+ 1027 04e6 61E0      		ldi r22,lo8(1)
+ 1028 04e8 8C2F      		mov r24,r28
+ 1029 04ea 8E19      		sub r24,r14
+ 1030 04ec 0E94 0000 		call LCD_GoTo
+ 1031               	.LVL92:
+ 1032 04f0 2196      		adiw r28,1
+ 1033               	.LVL93:
+ 245:src/morse.c   **** 		k++;
+ 1034               		.loc 1 245 0
+ 1035 04f2 F801      		movw r30,r16
+ 1036 04f4 8081      		ld r24,Z
+ 1037 04f6 0E94 0000 		call LCD_WriteData
+ 1038               	.LVL94:
+ 1039 04fa 00C0      		rjmp .L46
+ 1040               	.LVL95:
+ 1041               	.L49:
+ 1042               	/* epilogue start */
+ 248:src/morse.c   **** 
+ 1043               		.loc 1 248 0
+ 1044 04fc DF91      		pop r29
+ 1045 04fe CF91      		pop r28
+ 1046 0500 1F91      		pop r17
+ 1047 0502 0F91      		pop r16
+ 1048               	.LVL96:
+ 1049 0504 FF90      		pop r15
+ 1050 0506 EF90      		pop r14
+ 1051 0508 0895      		ret
+ 1052               		.cfi_endproc
+ 1053               	.LFE15:
+ 1055               	.global	isButton
+ 1057               	isButton:
+ 1058               	.LFB21:
+ 300:src/morse.c   **** }
+ 301:src/morse.c   **** 
+ 302:src/morse.c   **** int isButton()				//checks if encoder button is pressed
+ 303:src/morse.c   **** {
+ 1059               		.loc 1 303 0
+ 1060               		.cfi_startproc
+ 1061               	/* prologue: function */
+ 1062               	/* frame size = 0 */
+ 1063               	/* stack size = 0 */
+ 1064               	.L__stack_usage = 0
+ 304:src/morse.c   **** 	if(!(PINA & 0x08))
+ 1065               		.loc 1 304 0
+ 1066 050a 89B3      		in r24,0x19
+ 1067 050c 8695      		lsr r24
+ 1068 050e 8695      		lsr r24
+ 1069 0510 8695      		lsr r24
+ 1070 0512 91E0      		ldi r25,lo8(1)
+ 1071 0514 8927      		eor r24,r25
+ 305:src/morse.c   **** 		return 1;
+ 306:src/morse.c   **** 	else
+ 307:src/morse.c   **** 		return 0;
+ 308:src/morse.c   **** }
+ 1072               		.loc 1 308 0
+ 1073 0516 8170      		andi r24,1
+ 1074 0518 90E0      		ldi r25,0
+ 1075 051a 0895      		ret
+ 1076               		.cfi_endproc
+ 1077               	.LFE21:
+ 1079               		.section	.rodata.str1.1
+ 1080               	.LC5:
+ 1081 0027 5750 4D3A 		.string	"WPM:    "
+ 1081      2020 2020 
+ 1081      00
+ 1082               		.text
+ 1083               	.global	setWpmSpeed
+ 1085               	setWpmSpeed:
+ 1086               	.LFB14:
+ 202:src/morse.c   **** 	wpmSpeed = encoderCount;
+ 1087               		.loc 1 202 0
+ 1088               		.cfi_startproc
+ 1089               	/* prologue: function */
+ 1090               	/* frame size = 0 */
+ 1091               	/* stack size = 0 */
+ 1092               	.L__stack_usage = 0
+ 203:src/morse.c   **** 	itoa(wpmSpeed,lcdIntBuffer,10);		//conversion from int to array od chars for display		
+ 1093               		.loc 1 203 0
+ 1094 051c 8091 0000 		lds r24,encoderCount
+ 1095 0520 9091 0000 		lds r25,encoderCount+1
+ 1096 0524 9093 0000 		sts wpmSpeed+1,r25
+ 1097 0528 8093 0000 		sts wpmSpeed,r24
+ 1098               	.LVL97:
+ 1099               	.LBB19:
+ 1100               	.LBB20:
+ 1101               		.file 3 "/usr/lib/avr/include/stdlib.h"
+   1:/usr/lib/avr/include/stdlib.h **** /* Copyright (c) 2002, Marek Michalkiewicz
+   2:/usr/lib/avr/include/stdlib.h ****    Copyright (c) 2004,2007 Joerg Wunsch
+   3:/usr/lib/avr/include/stdlib.h **** 
+   4:/usr/lib/avr/include/stdlib.h ****    Portions of documentation Copyright (c) 1990, 1991, 1993, 1994
+   5:/usr/lib/avr/include/stdlib.h ****    The Regents of the University of California.
+   6:/usr/lib/avr/include/stdlib.h **** 
+   7:/usr/lib/avr/include/stdlib.h ****    All rights reserved.
+   8:/usr/lib/avr/include/stdlib.h **** 
+   9:/usr/lib/avr/include/stdlib.h ****    Redistribution and use in source and binary forms, with or without
+  10:/usr/lib/avr/include/stdlib.h ****    modification, are permitted provided that the following conditions are met:
+  11:/usr/lib/avr/include/stdlib.h **** 
+  12:/usr/lib/avr/include/stdlib.h ****    * Redistributions of source code must retain the above copyright
+  13:/usr/lib/avr/include/stdlib.h ****      notice, this list of conditions and the following disclaimer.
+  14:/usr/lib/avr/include/stdlib.h **** 
+  15:/usr/lib/avr/include/stdlib.h ****    * Redistributions in binary form must reproduce the above copyright
+  16:/usr/lib/avr/include/stdlib.h ****      notice, this list of conditions and the following disclaimer in
+  17:/usr/lib/avr/include/stdlib.h ****      the documentation and/or other materials provided with the
+  18:/usr/lib/avr/include/stdlib.h ****      distribution.
+  19:/usr/lib/avr/include/stdlib.h **** 
+  20:/usr/lib/avr/include/stdlib.h ****    * Neither the name of the copyright holders nor the names of
+  21:/usr/lib/avr/include/stdlib.h ****      contributors may be used to endorse or promote products derived
+  22:/usr/lib/avr/include/stdlib.h ****      from this software without specific prior written permission.
+  23:/usr/lib/avr/include/stdlib.h **** 
+  24:/usr/lib/avr/include/stdlib.h ****   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  25:/usr/lib/avr/include/stdlib.h ****   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  26:/usr/lib/avr/include/stdlib.h ****   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  27:/usr/lib/avr/include/stdlib.h ****   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  28:/usr/lib/avr/include/stdlib.h ****   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  29:/usr/lib/avr/include/stdlib.h ****   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  30:/usr/lib/avr/include/stdlib.h ****   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  31:/usr/lib/avr/include/stdlib.h ****   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  32:/usr/lib/avr/include/stdlib.h ****   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  33:/usr/lib/avr/include/stdlib.h ****   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  34:/usr/lib/avr/include/stdlib.h ****   POSSIBILITY OF SUCH DAMAGE.
+  35:/usr/lib/avr/include/stdlib.h **** 
+  36:/usr/lib/avr/include/stdlib.h ****   $Id$
+  37:/usr/lib/avr/include/stdlib.h **** */
+  38:/usr/lib/avr/include/stdlib.h **** 
+  39:/usr/lib/avr/include/stdlib.h **** #ifndef _STDLIB_H_
+  40:/usr/lib/avr/include/stdlib.h **** #define	_STDLIB_H_ 1
+  41:/usr/lib/avr/include/stdlib.h **** 
+  42:/usr/lib/avr/include/stdlib.h **** #ifndef __ASSEMBLER__
+  43:/usr/lib/avr/include/stdlib.h **** 
+  44:/usr/lib/avr/include/stdlib.h **** #define __need_NULL
+  45:/usr/lib/avr/include/stdlib.h **** #define __need_size_t
+  46:/usr/lib/avr/include/stdlib.h **** #define __need_wchar_t
+  47:/usr/lib/avr/include/stdlib.h **** #include <stddef.h>
+  48:/usr/lib/avr/include/stdlib.h **** 
+  49:/usr/lib/avr/include/stdlib.h **** #ifndef __ptr_t
+  50:/usr/lib/avr/include/stdlib.h **** #define __ptr_t void *
+  51:/usr/lib/avr/include/stdlib.h **** #endif
+  52:/usr/lib/avr/include/stdlib.h **** 
+  53:/usr/lib/avr/include/stdlib.h **** #ifdef __cplusplus
+  54:/usr/lib/avr/include/stdlib.h **** extern "C" {
+  55:/usr/lib/avr/include/stdlib.h **** #endif
+  56:/usr/lib/avr/include/stdlib.h **** 
+  57:/usr/lib/avr/include/stdlib.h **** /** \file */
+  58:/usr/lib/avr/include/stdlib.h **** 
+  59:/usr/lib/avr/include/stdlib.h **** /** \defgroup avr_stdlib <stdlib.h>: General utilities
+  60:/usr/lib/avr/include/stdlib.h ****     \code #include <stdlib.h> \endcode
+  61:/usr/lib/avr/include/stdlib.h **** 
+  62:/usr/lib/avr/include/stdlib.h ****     This file declares some basic C macros and functions as
+  63:/usr/lib/avr/include/stdlib.h ****     defined by the ISO standard, plus some AVR-specific extensions.
+  64:/usr/lib/avr/include/stdlib.h **** */
+  65:/usr/lib/avr/include/stdlib.h **** 
+  66:/usr/lib/avr/include/stdlib.h **** /*@{*/
+  67:/usr/lib/avr/include/stdlib.h **** /** Result type for function div(). */
+  68:/usr/lib/avr/include/stdlib.h **** typedef struct {
+  69:/usr/lib/avr/include/stdlib.h **** 	int quot;                   /**< The Quotient. */
+  70:/usr/lib/avr/include/stdlib.h **** 	int rem;                    /**< The Remainder. */
+  71:/usr/lib/avr/include/stdlib.h **** } div_t;
+  72:/usr/lib/avr/include/stdlib.h **** 
+  73:/usr/lib/avr/include/stdlib.h **** /** Result type for function ldiv(). */
+  74:/usr/lib/avr/include/stdlib.h **** typedef struct {
+  75:/usr/lib/avr/include/stdlib.h **** 	long quot;                  /**< The Quotient. */
+  76:/usr/lib/avr/include/stdlib.h **** 	long rem;                   /**< The Remainder. */
+  77:/usr/lib/avr/include/stdlib.h **** } ldiv_t;
+  78:/usr/lib/avr/include/stdlib.h **** 
+  79:/usr/lib/avr/include/stdlib.h **** /** Comparision function type for qsort(), just for convenience. */
+  80:/usr/lib/avr/include/stdlib.h **** typedef int (*__compar_fn_t)(const void *, const void *);
+  81:/usr/lib/avr/include/stdlib.h **** 
+  82:/usr/lib/avr/include/stdlib.h **** #ifndef __DOXYGEN__
+  83:/usr/lib/avr/include/stdlib.h **** 
+  84:/usr/lib/avr/include/stdlib.h **** #ifndef __ATTR_CONST__
+  85:/usr/lib/avr/include/stdlib.h **** # define __ATTR_CONST__ __attribute__((__const__))
+  86:/usr/lib/avr/include/stdlib.h **** #endif
+  87:/usr/lib/avr/include/stdlib.h **** 
+  88:/usr/lib/avr/include/stdlib.h **** #ifndef __ATTR_MALLOC__
+  89:/usr/lib/avr/include/stdlib.h **** # define __ATTR_MALLOC__ __attribute__((__malloc__))
+  90:/usr/lib/avr/include/stdlib.h **** #endif
+  91:/usr/lib/avr/include/stdlib.h **** 
+  92:/usr/lib/avr/include/stdlib.h **** #ifndef __ATTR_NORETURN__
+  93:/usr/lib/avr/include/stdlib.h **** # define __ATTR_NORETURN__ __attribute__((__noreturn__))
+  94:/usr/lib/avr/include/stdlib.h **** #endif
+  95:/usr/lib/avr/include/stdlib.h **** 
+  96:/usr/lib/avr/include/stdlib.h **** #ifndef __ATTR_PURE__
+  97:/usr/lib/avr/include/stdlib.h **** # define __ATTR_PURE__ __attribute__((__pure__))
+  98:/usr/lib/avr/include/stdlib.h **** #endif
+  99:/usr/lib/avr/include/stdlib.h **** 
+ 100:/usr/lib/avr/include/stdlib.h **** #ifndef	__ATTR_GNU_INLINE__
+ 101:/usr/lib/avr/include/stdlib.h **** # ifdef  __GNUC_STDC_INLINE__
+ 102:/usr/lib/avr/include/stdlib.h **** #  define __ATTR_GNU_INLINE__   __attribute__((__gnu_inline__))
+ 103:/usr/lib/avr/include/stdlib.h **** # else
+ 104:/usr/lib/avr/include/stdlib.h **** #  define __ATTR_GNU_INLINE__
+ 105:/usr/lib/avr/include/stdlib.h **** # endif
+ 106:/usr/lib/avr/include/stdlib.h **** #endif
+ 107:/usr/lib/avr/include/stdlib.h **** 
+ 108:/usr/lib/avr/include/stdlib.h **** #endif
+ 109:/usr/lib/avr/include/stdlib.h **** 
+ 110:/usr/lib/avr/include/stdlib.h **** /** The abort() function causes abnormal program termination to occur.
+ 111:/usr/lib/avr/include/stdlib.h ****     This realization disables interrupts and jumps to _exit() function
+ 112:/usr/lib/avr/include/stdlib.h ****     with argument equal to 1. In the limited AVR environment, execution is
+ 113:/usr/lib/avr/include/stdlib.h ****     effectively halted by entering an infinite loop. */
+ 114:/usr/lib/avr/include/stdlib.h **** extern void abort(void) __ATTR_NORETURN__;
+ 115:/usr/lib/avr/include/stdlib.h **** 
+ 116:/usr/lib/avr/include/stdlib.h **** /** The abs() function computes the absolute value of the integer \c i.
+ 117:/usr/lib/avr/include/stdlib.h ****    \note The abs() and labs() functions are builtins of gcc.
+ 118:/usr/lib/avr/include/stdlib.h **** */
+ 119:/usr/lib/avr/include/stdlib.h **** extern int abs(int __i) __ATTR_CONST__;
+ 120:/usr/lib/avr/include/stdlib.h **** #ifndef __DOXYGEN__
+ 121:/usr/lib/avr/include/stdlib.h **** #define	abs(__i) __builtin_abs(__i)
+ 122:/usr/lib/avr/include/stdlib.h **** #endif
+ 123:/usr/lib/avr/include/stdlib.h **** 
+ 124:/usr/lib/avr/include/stdlib.h **** /** The labs() function computes the absolute value of the long integer
+ 125:/usr/lib/avr/include/stdlib.h ****     \c i.
+ 126:/usr/lib/avr/include/stdlib.h ****    \note The abs() and labs() functions are builtins of gcc.
+ 127:/usr/lib/avr/include/stdlib.h **** */
+ 128:/usr/lib/avr/include/stdlib.h **** extern long labs(long __i) __ATTR_CONST__;
+ 129:/usr/lib/avr/include/stdlib.h **** #ifndef __DOXYGEN__
+ 130:/usr/lib/avr/include/stdlib.h **** #define labs(__i) __builtin_labs(__i)
+ 131:/usr/lib/avr/include/stdlib.h **** #endif
+ 132:/usr/lib/avr/include/stdlib.h **** 
+ 133:/usr/lib/avr/include/stdlib.h **** /**
+ 134:/usr/lib/avr/include/stdlib.h ****      The bsearch() function searches an array of \c nmemb objects, the
+ 135:/usr/lib/avr/include/stdlib.h ****      initial member of which is pointed to by \c base, for a member
+ 136:/usr/lib/avr/include/stdlib.h ****      that matches the object pointed to by \c key.  The size of each
+ 137:/usr/lib/avr/include/stdlib.h ****      member of the array is specified by \c size.
+ 138:/usr/lib/avr/include/stdlib.h **** 
+ 139:/usr/lib/avr/include/stdlib.h ****      The contents of the array should be in ascending sorted order
+ 140:/usr/lib/avr/include/stdlib.h ****      according to the comparison function referenced by \c compar.
+ 141:/usr/lib/avr/include/stdlib.h ****      The \c compar routine is expected to have two arguments which
+ 142:/usr/lib/avr/include/stdlib.h ****      point to the key object and to an array member, in that order,
+ 143:/usr/lib/avr/include/stdlib.h ****      and should return an integer less than, equal to, or greater than
+ 144:/usr/lib/avr/include/stdlib.h ****      zero if the key object is found, respectively, to be less than,
+ 145:/usr/lib/avr/include/stdlib.h ****      to match, or be greater than the array member.
+ 146:/usr/lib/avr/include/stdlib.h **** 
+ 147:/usr/lib/avr/include/stdlib.h ****      The bsearch() function returns a pointer to a matching member of
+ 148:/usr/lib/avr/include/stdlib.h ****      the array, or a null pointer if no match is found.  If two
+ 149:/usr/lib/avr/include/stdlib.h ****      members compare as equal, which member is matched is unspecified.
+ 150:/usr/lib/avr/include/stdlib.h **** */
+ 151:/usr/lib/avr/include/stdlib.h **** extern void *bsearch(const void *__key, const void *__base, size_t __nmemb,
+ 152:/usr/lib/avr/include/stdlib.h **** 		     size_t __size, int (*__compar)(const void *, const void *));
+ 153:/usr/lib/avr/include/stdlib.h **** 
+ 154:/usr/lib/avr/include/stdlib.h **** /* __divmodhi4 and __divmodsi4 from libgcc.a */
+ 155:/usr/lib/avr/include/stdlib.h **** /**
+ 156:/usr/lib/avr/include/stdlib.h ****      The div() function computes the value \c num/denom and returns
+ 157:/usr/lib/avr/include/stdlib.h ****      the quotient and remainder in a structure named \c div_t that
+ 158:/usr/lib/avr/include/stdlib.h ****      contains two int members named \c quot and \c rem.
+ 159:/usr/lib/avr/include/stdlib.h **** */
+ 160:/usr/lib/avr/include/stdlib.h **** extern div_t div(int __num, int __denom) __asm__("__divmodhi4") __ATTR_CONST__;
+ 161:/usr/lib/avr/include/stdlib.h **** /**
+ 162:/usr/lib/avr/include/stdlib.h ****      The ldiv() function computes the value \c num/denom and returns
+ 163:/usr/lib/avr/include/stdlib.h ****      the quotient and remainder in a structure named \c ldiv_t that
+ 164:/usr/lib/avr/include/stdlib.h ****      contains two long integer members named \c quot and \c rem.
+ 165:/usr/lib/avr/include/stdlib.h **** */
+ 166:/usr/lib/avr/include/stdlib.h **** extern ldiv_t ldiv(long __num, long __denom) __asm__("__divmodsi4") __ATTR_CONST__;
+ 167:/usr/lib/avr/include/stdlib.h **** 
+ 168:/usr/lib/avr/include/stdlib.h **** /**
+ 169:/usr/lib/avr/include/stdlib.h ****      The qsort() function is a modified partition-exchange sort, or
+ 170:/usr/lib/avr/include/stdlib.h ****      quicksort.
+ 171:/usr/lib/avr/include/stdlib.h **** 
+ 172:/usr/lib/avr/include/stdlib.h ****      The qsort() function sorts an array of \c nmemb objects, the
+ 173:/usr/lib/avr/include/stdlib.h ****      initial member of which is pointed to by \c base.  The size of
+ 174:/usr/lib/avr/include/stdlib.h ****      each object is specified by \c size.  The contents of the array
+ 175:/usr/lib/avr/include/stdlib.h ****      base are sorted in ascending order according to a comparison
+ 176:/usr/lib/avr/include/stdlib.h ****      function pointed to by \c compar, which requires two arguments
+ 177:/usr/lib/avr/include/stdlib.h ****      pointing to the objects being compared.
+ 178:/usr/lib/avr/include/stdlib.h **** 
+ 179:/usr/lib/avr/include/stdlib.h ****      The comparison function must return an integer less than, equal
+ 180:/usr/lib/avr/include/stdlib.h ****      to, or greater than zero if the first argument is considered to
+ 181:/usr/lib/avr/include/stdlib.h ****      be respectively less than, equal to, or greater than the second.
+ 182:/usr/lib/avr/include/stdlib.h **** */
+ 183:/usr/lib/avr/include/stdlib.h **** extern void qsort(void *__base, size_t __nmemb, size_t __size,
+ 184:/usr/lib/avr/include/stdlib.h **** 		  __compar_fn_t __compar);
+ 185:/usr/lib/avr/include/stdlib.h **** 
+ 186:/usr/lib/avr/include/stdlib.h **** /**
+ 187:/usr/lib/avr/include/stdlib.h ****     The strtol() function converts the string in \c nptr to a long
+ 188:/usr/lib/avr/include/stdlib.h ****     value.  The conversion is done according to the given base, which
+ 189:/usr/lib/avr/include/stdlib.h ****     must be between 2 and 36 inclusive, or be the special value 0.
+ 190:/usr/lib/avr/include/stdlib.h **** 
+ 191:/usr/lib/avr/include/stdlib.h ****     The string may begin with an arbitrary amount of white space (as
+ 192:/usr/lib/avr/include/stdlib.h ****     determined by isspace()) followed by a single optional \c '+' or \c '-'
+ 193:/usr/lib/avr/include/stdlib.h ****     sign.  If \c base is zero or 16, the string may then include a
+ 194:/usr/lib/avr/include/stdlib.h ****     \c "0x" prefix, and the number will be read in base 16; otherwise,
+ 195:/usr/lib/avr/include/stdlib.h ****     a zero base is taken as 10 (decimal) unless the next character is
+ 196:/usr/lib/avr/include/stdlib.h ****     \c '0', in which case it is taken as 8 (octal).
+ 197:/usr/lib/avr/include/stdlib.h **** 
+ 198:/usr/lib/avr/include/stdlib.h ****     The remainder of the string is converted to a long value in the
+ 199:/usr/lib/avr/include/stdlib.h ****     obvious manner, stopping at the first character which is not a
+ 200:/usr/lib/avr/include/stdlib.h ****     valid digit in the given base.  (In bases above 10, the letter \c 'A'
+ 201:/usr/lib/avr/include/stdlib.h ****     in either upper or lower case represents 10, \c 'B' represents 11,
+ 202:/usr/lib/avr/include/stdlib.h ****     and so forth, with \c 'Z' representing 35.)
+ 203:/usr/lib/avr/include/stdlib.h **** 
+ 204:/usr/lib/avr/include/stdlib.h ****     If \c endptr is not NULL, strtol() stores the address of the first
+ 205:/usr/lib/avr/include/stdlib.h ****     invalid character in \c *endptr.  If there were no digits at all,
+ 206:/usr/lib/avr/include/stdlib.h ****     however, strtol() stores the original value of \c nptr in \c
+ 207:/usr/lib/avr/include/stdlib.h ****     *endptr.  (Thus, if \c *nptr is not \c '\\0' but \c **endptr is \c '\\0'
+ 208:/usr/lib/avr/include/stdlib.h ****     on return, the entire string was valid.)
+ 209:/usr/lib/avr/include/stdlib.h **** 
+ 210:/usr/lib/avr/include/stdlib.h ****     The strtol() function returns the result of the conversion, unless
+ 211:/usr/lib/avr/include/stdlib.h ****     the value would underflow or overflow.  If no conversion could be
+ 212:/usr/lib/avr/include/stdlib.h ****     performed, 0 is returned.  If an overflow or underflow occurs, \c
+ 213:/usr/lib/avr/include/stdlib.h ****     errno is set to \ref avr_errno "ERANGE" and the function return value
+ 214:/usr/lib/avr/include/stdlib.h ****     is clamped to \c LONG_MIN or \c LONG_MAX, respectively.
+ 215:/usr/lib/avr/include/stdlib.h **** */
+ 216:/usr/lib/avr/include/stdlib.h **** extern long strtol(const char *__nptr, char **__endptr, int __base);
+ 217:/usr/lib/avr/include/stdlib.h **** 
+ 218:/usr/lib/avr/include/stdlib.h **** /**
+ 219:/usr/lib/avr/include/stdlib.h ****     The strtoul() function converts the string in \c nptr to an
+ 220:/usr/lib/avr/include/stdlib.h ****     unsigned long value.  The conversion is done according to the
+ 221:/usr/lib/avr/include/stdlib.h ****     given base, which must be between 2 and 36 inclusive, or be the
+ 222:/usr/lib/avr/include/stdlib.h ****     special value 0.
+ 223:/usr/lib/avr/include/stdlib.h **** 
+ 224:/usr/lib/avr/include/stdlib.h ****     The string may begin with an arbitrary amount of white space (as
+ 225:/usr/lib/avr/include/stdlib.h ****     determined by isspace()) followed by a single optional \c '+' or \c '-'
+ 226:/usr/lib/avr/include/stdlib.h ****     sign.  If \c base is zero or 16, the string may then include a
+ 227:/usr/lib/avr/include/stdlib.h ****     \c "0x" prefix, and the number will be read in base 16; otherwise,
+ 228:/usr/lib/avr/include/stdlib.h ****     a zero base is taken as 10 (decimal) unless the next character is
+ 229:/usr/lib/avr/include/stdlib.h ****     \c '0', in which case it is taken as 8 (octal).
+ 230:/usr/lib/avr/include/stdlib.h **** 
+ 231:/usr/lib/avr/include/stdlib.h ****     The remainder of the string is converted to an unsigned long value
+ 232:/usr/lib/avr/include/stdlib.h ****     in the obvious manner, stopping at the first character which is
+ 233:/usr/lib/avr/include/stdlib.h ****     not a valid digit in the given base.  (In bases above 10, the
+ 234:/usr/lib/avr/include/stdlib.h ****     letter \c 'A' in either upper or lower case represents 10, \c 'B'
+ 235:/usr/lib/avr/include/stdlib.h ****     represents 11, and so forth, with \c 'Z' representing 35.)
+ 236:/usr/lib/avr/include/stdlib.h **** 
+ 237:/usr/lib/avr/include/stdlib.h ****     If \c endptr is not NULL, strtoul() stores the address of the first
+ 238:/usr/lib/avr/include/stdlib.h ****     invalid character in \c *endptr.  If there were no digits at all,
+ 239:/usr/lib/avr/include/stdlib.h ****     however, strtoul() stores the original value of \c nptr in \c
+ 240:/usr/lib/avr/include/stdlib.h ****     *endptr.  (Thus, if \c *nptr is not \c '\\0' but \c **endptr is \c '\\0'
+ 241:/usr/lib/avr/include/stdlib.h ****     on return, the entire string was valid.)
+ 242:/usr/lib/avr/include/stdlib.h **** 
+ 243:/usr/lib/avr/include/stdlib.h ****     The strtoul() function return either the result of the conversion
+ 244:/usr/lib/avr/include/stdlib.h ****     or, if there was a leading minus sign, the negation of the result
+ 245:/usr/lib/avr/include/stdlib.h ****     of the conversion, unless the original (non-negated) value would
+ 246:/usr/lib/avr/include/stdlib.h ****     overflow; in the latter case, strtoul() returns ULONG_MAX, and \c
+ 247:/usr/lib/avr/include/stdlib.h ****     errno is set to \ref avr_errno "ERANGE".  If no conversion could 
+ 248:/usr/lib/avr/include/stdlib.h ****     be performed, 0 is returned.
+ 249:/usr/lib/avr/include/stdlib.h **** */
+ 250:/usr/lib/avr/include/stdlib.h **** extern unsigned long strtoul(const char *__nptr, char **__endptr, int __base);
+ 251:/usr/lib/avr/include/stdlib.h **** 
+ 252:/usr/lib/avr/include/stdlib.h **** /**
+ 253:/usr/lib/avr/include/stdlib.h ****     The atol() function converts the initial portion of the string
+ 254:/usr/lib/avr/include/stdlib.h ****     pointed to by \p s to long integer representation. In contrast to
+ 255:/usr/lib/avr/include/stdlib.h **** 
+ 256:/usr/lib/avr/include/stdlib.h ****         \code strtol(s, (char **)NULL, 10); \endcode
+ 257:/usr/lib/avr/include/stdlib.h **** 
+ 258:/usr/lib/avr/include/stdlib.h ****     this function does not detect overflow (\c errno is not changed and
+ 259:/usr/lib/avr/include/stdlib.h ****     the result value is not predictable), uses smaller memory (flash and
+ 260:/usr/lib/avr/include/stdlib.h ****     stack) and works more quickly.
+ 261:/usr/lib/avr/include/stdlib.h **** */
+ 262:/usr/lib/avr/include/stdlib.h **** extern long atol(const char *__s) __ATTR_PURE__;
+ 263:/usr/lib/avr/include/stdlib.h **** 
+ 264:/usr/lib/avr/include/stdlib.h **** /**
+ 265:/usr/lib/avr/include/stdlib.h ****     The atoi() function converts the initial portion of the string
+ 266:/usr/lib/avr/include/stdlib.h ****     pointed to by \p s to integer representation. In contrast to
+ 267:/usr/lib/avr/include/stdlib.h **** 
+ 268:/usr/lib/avr/include/stdlib.h ****         \code (int)strtol(s, (char **)NULL, 10); \endcode
+ 269:/usr/lib/avr/include/stdlib.h **** 
+ 270:/usr/lib/avr/include/stdlib.h ****     this function does not detect overflow (\c errno is not changed and
+ 271:/usr/lib/avr/include/stdlib.h ****     the result value is not predictable), uses smaller memory (flash and
+ 272:/usr/lib/avr/include/stdlib.h ****     stack) and works more quickly.
+ 273:/usr/lib/avr/include/stdlib.h **** */
+ 274:/usr/lib/avr/include/stdlib.h **** extern int atoi(const char *__s) __ATTR_PURE__;
+ 275:/usr/lib/avr/include/stdlib.h **** 
+ 276:/usr/lib/avr/include/stdlib.h **** /**
+ 277:/usr/lib/avr/include/stdlib.h ****    The exit() function terminates the application.  Since there is no
+ 278:/usr/lib/avr/include/stdlib.h ****    environment to return to, \c status is ignored, and code execution
+ 279:/usr/lib/avr/include/stdlib.h ****    will eventually reach an infinite loop, thereby effectively halting
+ 280:/usr/lib/avr/include/stdlib.h ****    all code processing.  Before entering the infinite loop, interrupts
+ 281:/usr/lib/avr/include/stdlib.h ****    are globally disabled.
+ 282:/usr/lib/avr/include/stdlib.h **** 
+ 283:/usr/lib/avr/include/stdlib.h ****    In a C++ context, global destructors will be called before halting
+ 284:/usr/lib/avr/include/stdlib.h ****    execution.
+ 285:/usr/lib/avr/include/stdlib.h **** */
+ 286:/usr/lib/avr/include/stdlib.h **** extern void exit(int __status) __ATTR_NORETURN__;
+ 287:/usr/lib/avr/include/stdlib.h **** 
+ 288:/usr/lib/avr/include/stdlib.h **** /**
+ 289:/usr/lib/avr/include/stdlib.h ****    The malloc() function allocates \c size bytes of memory.
+ 290:/usr/lib/avr/include/stdlib.h ****    If malloc() fails, a NULL pointer is returned.
+ 291:/usr/lib/avr/include/stdlib.h **** 
+ 292:/usr/lib/avr/include/stdlib.h ****    Note that malloc() does \e not initialize the returned memory to
+ 293:/usr/lib/avr/include/stdlib.h ****    zero bytes.
+ 294:/usr/lib/avr/include/stdlib.h **** 
+ 295:/usr/lib/avr/include/stdlib.h ****    See the chapter about \ref malloc "malloc() usage" for implementation
+ 296:/usr/lib/avr/include/stdlib.h ****    details.
+ 297:/usr/lib/avr/include/stdlib.h **** */
+ 298:/usr/lib/avr/include/stdlib.h **** extern void *malloc(size_t __size) __ATTR_MALLOC__;
+ 299:/usr/lib/avr/include/stdlib.h **** 
+ 300:/usr/lib/avr/include/stdlib.h **** /**
+ 301:/usr/lib/avr/include/stdlib.h ****    The free() function causes the allocated memory referenced by \c
+ 302:/usr/lib/avr/include/stdlib.h ****    ptr to be made available for future allocations.  If \c ptr is
+ 303:/usr/lib/avr/include/stdlib.h ****    NULL, no action occurs.
+ 304:/usr/lib/avr/include/stdlib.h **** */
+ 305:/usr/lib/avr/include/stdlib.h **** extern void free(void *__ptr);
+ 306:/usr/lib/avr/include/stdlib.h **** 
+ 307:/usr/lib/avr/include/stdlib.h **** /**
+ 308:/usr/lib/avr/include/stdlib.h ****    \c malloc() \ref malloc_tunables "tunable".
+ 309:/usr/lib/avr/include/stdlib.h **** */
+ 310:/usr/lib/avr/include/stdlib.h **** extern size_t __malloc_margin;
+ 311:/usr/lib/avr/include/stdlib.h **** 
+ 312:/usr/lib/avr/include/stdlib.h **** /**
+ 313:/usr/lib/avr/include/stdlib.h ****    \c malloc() \ref malloc_tunables "tunable".
+ 314:/usr/lib/avr/include/stdlib.h **** */
+ 315:/usr/lib/avr/include/stdlib.h **** extern char *__malloc_heap_start;
+ 316:/usr/lib/avr/include/stdlib.h **** 
+ 317:/usr/lib/avr/include/stdlib.h **** /**
+ 318:/usr/lib/avr/include/stdlib.h ****    \c malloc() \ref malloc_tunables "tunable".
+ 319:/usr/lib/avr/include/stdlib.h **** */
+ 320:/usr/lib/avr/include/stdlib.h **** extern char *__malloc_heap_end;
+ 321:/usr/lib/avr/include/stdlib.h **** 
+ 322:/usr/lib/avr/include/stdlib.h **** /**
+ 323:/usr/lib/avr/include/stdlib.h ****    Allocate \c nele elements of \c size each.  Identical to calling
+ 324:/usr/lib/avr/include/stdlib.h ****    \c malloc() using <tt>nele * size</tt> as argument, except the
+ 325:/usr/lib/avr/include/stdlib.h ****    allocated memory will be cleared to zero.
+ 326:/usr/lib/avr/include/stdlib.h **** */
+ 327:/usr/lib/avr/include/stdlib.h **** extern void *calloc(size_t __nele, size_t __size) __ATTR_MALLOC__;
+ 328:/usr/lib/avr/include/stdlib.h **** 
+ 329:/usr/lib/avr/include/stdlib.h **** /**
+ 330:/usr/lib/avr/include/stdlib.h ****    The realloc() function tries to change the size of the region
+ 331:/usr/lib/avr/include/stdlib.h ****    allocated at \c ptr to the new \c size value.  It returns a
+ 332:/usr/lib/avr/include/stdlib.h ****    pointer to the new region.  The returned pointer might be the
+ 333:/usr/lib/avr/include/stdlib.h ****    same as the old pointer, or a pointer to a completely different
+ 334:/usr/lib/avr/include/stdlib.h ****    region.
+ 335:/usr/lib/avr/include/stdlib.h **** 
+ 336:/usr/lib/avr/include/stdlib.h ****    The contents of the returned region up to either the old or the new
+ 337:/usr/lib/avr/include/stdlib.h ****    size value (whatever is less) will be identical to the contents of
+ 338:/usr/lib/avr/include/stdlib.h ****    the old region, even in case a new region had to be allocated.
+ 339:/usr/lib/avr/include/stdlib.h **** 
+ 340:/usr/lib/avr/include/stdlib.h ****    It is acceptable to pass \c ptr as NULL, in which case realloc()
+ 341:/usr/lib/avr/include/stdlib.h ****    will behave identical to malloc().
+ 342:/usr/lib/avr/include/stdlib.h **** 
+ 343:/usr/lib/avr/include/stdlib.h ****    If the new memory cannot be allocated, realloc() returns NULL, and
+ 344:/usr/lib/avr/include/stdlib.h ****    the region at \c ptr will not be changed.
+ 345:/usr/lib/avr/include/stdlib.h **** */
+ 346:/usr/lib/avr/include/stdlib.h **** extern void *realloc(void *__ptr, size_t __size) __ATTR_MALLOC__;
+ 347:/usr/lib/avr/include/stdlib.h **** 
+ 348:/usr/lib/avr/include/stdlib.h **** extern double strtod(const char *__nptr, char **__endptr);
+ 349:/usr/lib/avr/include/stdlib.h **** 
+ 350:/usr/lib/avr/include/stdlib.h **** extern double atof(const char *__nptr);
+ 351:/usr/lib/avr/include/stdlib.h **** 
+ 352:/usr/lib/avr/include/stdlib.h **** /** Highest number that can be generated by rand(). */
+ 353:/usr/lib/avr/include/stdlib.h **** #define	RAND_MAX 0x7FFF
+ 354:/usr/lib/avr/include/stdlib.h **** 
+ 355:/usr/lib/avr/include/stdlib.h **** /**
+ 356:/usr/lib/avr/include/stdlib.h ****      The rand() function computes a sequence of pseudo-random integers in the
+ 357:/usr/lib/avr/include/stdlib.h ****      range of 0 to \c RAND_MAX (as defined by the header file <stdlib.h>).
+ 358:/usr/lib/avr/include/stdlib.h **** 
+ 359:/usr/lib/avr/include/stdlib.h ****      The srand() function sets its argument \c seed as the seed for a new
+ 360:/usr/lib/avr/include/stdlib.h ****      sequence of pseudo-random numbers to be returned by rand().  These
+ 361:/usr/lib/avr/include/stdlib.h ****      sequences are repeatable by calling srand() with the same seed value.
+ 362:/usr/lib/avr/include/stdlib.h **** 
+ 363:/usr/lib/avr/include/stdlib.h ****      If no seed value is provided, the functions are automatically seeded with
+ 364:/usr/lib/avr/include/stdlib.h ****      a value of 1.
+ 365:/usr/lib/avr/include/stdlib.h **** 
+ 366:/usr/lib/avr/include/stdlib.h ****      In compliance with the C standard, these functions operate on
+ 367:/usr/lib/avr/include/stdlib.h ****      \c int arguments.  Since the underlying algorithm already uses
+ 368:/usr/lib/avr/include/stdlib.h ****      32-bit calculations, this causes a loss of precision.  See
+ 369:/usr/lib/avr/include/stdlib.h ****      \c random() for an alternate set of functions that retains full
+ 370:/usr/lib/avr/include/stdlib.h ****      32-bit precision.
+ 371:/usr/lib/avr/include/stdlib.h **** */
+ 372:/usr/lib/avr/include/stdlib.h **** extern int rand(void);
+ 373:/usr/lib/avr/include/stdlib.h **** /**
+ 374:/usr/lib/avr/include/stdlib.h ****    Pseudo-random number generator seeding; see rand().
+ 375:/usr/lib/avr/include/stdlib.h **** */
+ 376:/usr/lib/avr/include/stdlib.h **** extern void srand(unsigned int __seed);
+ 377:/usr/lib/avr/include/stdlib.h **** 
+ 378:/usr/lib/avr/include/stdlib.h **** /**
+ 379:/usr/lib/avr/include/stdlib.h ****    Variant of rand() that stores the context in the user-supplied
+ 380:/usr/lib/avr/include/stdlib.h ****    variable located at \c ctx instead of a static library variable
+ 381:/usr/lib/avr/include/stdlib.h ****    so the function becomes re-entrant.
+ 382:/usr/lib/avr/include/stdlib.h **** */
+ 383:/usr/lib/avr/include/stdlib.h **** extern int rand_r(unsigned long *__ctx);
+ 384:/usr/lib/avr/include/stdlib.h **** /*@}*/
+ 385:/usr/lib/avr/include/stdlib.h **** 
+ 386:/usr/lib/avr/include/stdlib.h **** /*@{*/
+ 387:/usr/lib/avr/include/stdlib.h **** /** \name Non-standard (i.e. non-ISO C) functions.
+ 388:/usr/lib/avr/include/stdlib.h ****  \ingroup avr_stdlib
+ 389:/usr/lib/avr/include/stdlib.h **** */
+ 390:/usr/lib/avr/include/stdlib.h **** /**
+ 391:/usr/lib/avr/include/stdlib.h ****    \brief Convert an integer to a string.
+ 392:/usr/lib/avr/include/stdlib.h **** 
+ 393:/usr/lib/avr/include/stdlib.h ****    The function itoa() converts the integer value from \c val into an
+ 394:/usr/lib/avr/include/stdlib.h ****    ASCII representation that will be stored under \c s.  The caller
+ 395:/usr/lib/avr/include/stdlib.h ****    is responsible for providing sufficient storage in \c s.
+ 396:/usr/lib/avr/include/stdlib.h **** 
+ 397:/usr/lib/avr/include/stdlib.h ****    \note The minimal size of the buffer \c s depends on the choice of
+ 398:/usr/lib/avr/include/stdlib.h ****    radix. For example, if the radix is 2 (binary), you need to supply a buffer
+ 399:/usr/lib/avr/include/stdlib.h ****    with a minimal length of 8 * sizeof (int) + 1 characters, i.e. one
+ 400:/usr/lib/avr/include/stdlib.h ****    character for each bit plus one for the string terminator. Using a larger
+ 401:/usr/lib/avr/include/stdlib.h ****    radix will require a smaller minimal buffer size.
+ 402:/usr/lib/avr/include/stdlib.h **** 
+ 403:/usr/lib/avr/include/stdlib.h ****    \warning If the buffer is too small, you risk a buffer overflow.
+ 404:/usr/lib/avr/include/stdlib.h **** 
+ 405:/usr/lib/avr/include/stdlib.h ****    Conversion is done using the \c radix as base, which may be a
+ 406:/usr/lib/avr/include/stdlib.h ****    number between 2 (binary conversion) and up to 36.  If \c radix
+ 407:/usr/lib/avr/include/stdlib.h ****    is greater than 10, the next digit after \c '9' will be the letter
+ 408:/usr/lib/avr/include/stdlib.h ****    \c 'a'.
+ 409:/usr/lib/avr/include/stdlib.h ****     
+ 410:/usr/lib/avr/include/stdlib.h ****     If radix is 10 and val is negative, a minus sign will be prepended.
+ 411:/usr/lib/avr/include/stdlib.h **** 
+ 412:/usr/lib/avr/include/stdlib.h ****    The itoa() function returns the pointer passed as \c s.
+ 413:/usr/lib/avr/include/stdlib.h **** */
+ 414:/usr/lib/avr/include/stdlib.h **** #ifdef  __DOXYGEN__
+ 415:/usr/lib/avr/include/stdlib.h **** extern char *itoa(int val, char *s, int radix);
+ 416:/usr/lib/avr/include/stdlib.h **** #else
+ 417:/usr/lib/avr/include/stdlib.h **** extern __inline__ __ATTR_GNU_INLINE__
+ 418:/usr/lib/avr/include/stdlib.h **** char *itoa (int __val, char *__s, int __radix)
+ 419:/usr/lib/avr/include/stdlib.h **** {
+ 420:/usr/lib/avr/include/stdlib.h ****     if (!__builtin_constant_p (__radix)) {
+ 421:/usr/lib/avr/include/stdlib.h **** 	extern char *__itoa (int, char *, int);
+ 422:/usr/lib/avr/include/stdlib.h **** 	return __itoa (__val, __s, __radix);
+ 423:/usr/lib/avr/include/stdlib.h ****     } else if (__radix < 2 || __radix > 36) {
+ 424:/usr/lib/avr/include/stdlib.h **** 	*__s = 0;
+ 425:/usr/lib/avr/include/stdlib.h **** 	return __s;
+ 426:/usr/lib/avr/include/stdlib.h ****     } else {
+ 427:/usr/lib/avr/include/stdlib.h **** 	extern char *__itoa_ncheck (int, char *, unsigned char);
+ 428:/usr/lib/avr/include/stdlib.h **** 	return __itoa_ncheck (__val, __s, __radix);
+ 1102               		.loc 3 428 0
+ 1103 052c 4AE0      		ldi r20,lo8(10)
+ 1104 052e 60E0      		ldi r22,lo8(lcdIntBuffer)
+ 1105 0530 70E0      		ldi r23,hi8(lcdIntBuffer)
+ 1106 0532 0E94 0000 		call __itoa_ncheck
+ 1107               	.LVL98:
+ 1108               	.LBE20:
+ 1109               	.LBE19:
+ 206:src/morse.c   **** 	LCD_WriteText("WPM:    ");
+ 1110               		.loc 1 206 0
+ 1111 0536 0E94 0000 		call LCD_Home
+ 1112               	.LVL99:
+ 207:src/morse.c   **** 	LCD_GoTo(0,1);
+ 1113               		.loc 1 207 0
+ 1114 053a 80E0      		ldi r24,lo8(.LC5)
+ 1115 053c 90E0      		ldi r25,hi8(.LC5)
+ 1116 053e 0E94 0000 		call LCD_WriteText
+ 1117               	.LVL100:
+ 208:src/morse.c   **** 	LCD_WriteText(lcdIntBuffer);
+ 1118               		.loc 1 208 0
+ 1119 0542 61E0      		ldi r22,lo8(1)
+ 1120 0544 80E0      		ldi r24,0
+ 1121 0546 0E94 0000 		call LCD_GoTo
+ 1122               	.LVL101:
+ 209:src/morse.c   **** 	
+ 1123               		.loc 1 209 0
+ 1124 054a 80E0      		ldi r24,lo8(lcdIntBuffer)
+ 1125 054c 90E0      		ldi r25,hi8(lcdIntBuffer)
+ 1126 054e 0E94 0000 		call LCD_WriteText
+ 1127               	.LVL102:
+ 211:src/morse.c   **** 	{
+ 1128               		.loc 1 211 0
+ 1129 0552 0E94 0000 		call isButton
+ 1130               	.LVL103:
+ 1131 0556 0097      		sbiw r24,0
+ 1132 0558 01F0      		breq .L52
+ 213:src/morse.c   **** 		delay_ms(600);
+ 1133               		.loc 1 213 0
+ 1134 055a 1092 0000 		sts encoderCount+1,__zero_reg__
+ 1135 055e 1092 0000 		sts encoderCount,__zero_reg__
+ 214:src/morse.c   **** 		return 1;
+ 1136               		.loc 1 214 0
+ 1137 0562 88E5      		ldi r24,lo8(88)
+ 1138 0564 92E0      		ldi r25,lo8(2)
+ 1139 0566 0E94 0000 		call delay_ms
+ 1140               	.LVL104:
+ 215:src/morse.c   **** 	}
+ 1141               		.loc 1 215 0
+ 1142 056a 81E0      		ldi r24,lo8(1)
+ 1143 056c 90E0      		ldi r25,0
+ 1144               	.L52:
+ 218:src/morse.c   **** 
+ 1145               		.loc 1 218 0
+ 1146 056e 0895      		ret
+ 1147               		.cfi_endproc
+ 1148               	.LFE14:
+ 1150               	.global	readEncoder
+ 1152               	readEncoder:
+ 1153               	.LFB22:
+ 309:src/morse.c   **** 
+ 310:src/morse.c   **** uint8_t readEncoder(void)	//reads the gray code from encoder
+ 311:src/morse.c   **** {
+ 1154               		.loc 1 311 0
+ 1155               		.cfi_startproc
+ 1156               	/* prologue: function */
+ 1157               	/* frame size = 0 */
+ 1158               	/* stack size = 0 */
+ 1159               	.L__stack_usage = 0
+ 1160               	.LVL105:
+ 312:src/morse.c   ****  uint8_t val=0;
+ 313:src/morse.c   **** 
+ 314:src/morse.c   ****   if(!bit_is_clear(PINA, ENC_B))
+ 1161               		.loc 1 314 0
+ 1162 0570 CA9B      		sbis 0x19,2
+ 1163 0572 00C0      		rjmp .L59
+ 315:src/morse.c   **** 	val |= (1<<1);
+ 1164               		.loc 1 315 0
+ 1165 0574 82E0      		ldi r24,lo8(2)
+ 1166 0576 00C0      		rjmp .L57
+ 1167               	.L59:
+ 312:src/morse.c   ****  uint8_t val=0;
+ 1168               		.loc 1 312 0
+ 1169 0578 80E0      		ldi r24,0
+ 1170               	.L57:
+ 1171               	.LVL106:
+ 316:src/morse.c   **** 
+ 317:src/morse.c   ****   if(!bit_is_clear(PINA, ENC_A))
+ 1172               		.loc 1 317 0
+ 1173 057a C999      		sbic 0x19,1
+ 318:src/morse.c   **** 	val |= (1<<0);
+ 1174               		.loc 1 318 0
+ 1175 057c 8160      		ori r24,lo8(1)
+ 1176               	.LVL107:
+ 1177               	.L58:
+ 319:src/morse.c   **** 
+ 320:src/morse.c   ****   return val;
+ 321:src/morse.c   **** }
+ 1178               		.loc 1 321 0
+ 1179 057e 0895      		ret
+ 1180               		.cfi_endproc
+ 1181               	.LFE22:
+ 1183               	.global	initializeSetup
+ 1185               	initializeSetup:
+ 1186               	.LFB11:
+  64:src/morse.c   **** 	 MCUCSR = (1<<JTD);			//disabling JTAG
+ 1187               		.loc 1 64 0
+ 1188               		.cfi_startproc
+ 1189               	/* prologue: function */
+ 1190               	/* frame size = 0 */
+ 1191               	/* stack size = 0 */
+ 1192               	.L__stack_usage = 0
+  65:src/morse.c   **** 	 MCUCSR = (1<<JTD);			//
+ 1193               		.loc 1 65 0
+ 1194 0580 80E8      		ldi r24,lo8(-128)
+ 1195 0582 84BF      		out 0x34,r24
+  66:src/morse.c   **** 
+ 1196               		.loc 1 66 0
+ 1197 0584 84BF      		out 0x34,r24
+  68:src/morse.c   **** 	TCCR2 |= (1<<CS22)|(1<<CS21)|(1<<CS20);		//prescaler = 1024
+ 1198               		.loc 1 68 0
+ 1199 0586 95B5      		in r25,0x25
+ 1200 0588 9860      		ori r25,lo8(8)
+ 1201 058a 95BD      		out 0x25,r25
+  69:src/morse.c   **** 	OCR2  = 4;				//comparison interrupt every 10ms (100Hz)
+ 1202               		.loc 1 69 0
+ 1203 058c 95B5      		in r25,0x25
+ 1204 058e 9760      		ori r25,lo8(7)
+ 1205 0590 95BD      		out 0x25,r25
+  70:src/morse.c   **** 	TIMSK = (1<<OCIE2);		//interrupt unlock CompareMatch
+ 1206               		.loc 1 70 0
+ 1207 0592 94E0      		ldi r25,lo8(4)
+ 1208 0594 93BD      		out 0x23,r25
+  71:src/morse.c   **** 
+ 1209               		.loc 1 71 0
+ 1210 0596 89BF      		out 0x39,r24
+  73:src/morse.c   **** 		DDRA &=~ (1 << ENC_B);		//
+ 1211               		.loc 1 73 0
+ 1212 0598 D198      		cbi 0x1a,1
+  74:src/morse.c   **** 		PORTA |= (1 << ENC_B)		// with pull-up enabled
+ 1213               		.loc 1 74 0
+ 1214 059a D298      		cbi 0x1a,2
+  75:src/morse.c   **** 				|(1 << ENC_A);		//
+ 1215               		.loc 1 75 0
+ 1216 059c 8BB3      		in r24,0x1b
+ 1217 059e 8660      		ori r24,lo8(6)
+ 1218 05a0 8BBB      		out 0x1b,r24
+  78:src/morse.c   **** 		DDRA |= (0<<ENC_BTN);		//encoder button pin as input
+ 1219               		.loc 1 78 0
+ 1220 05a2 A49A      		sbi 0x14,4
+  79:src/morse.c   **** 
+ 1221               		.loc 1 79 0
+ 1222 05a4 8AB3      		in r24,0x1a
+ 1223 05a6 8ABB      		out 0x1a,r24
+  81:src/morse.c   **** 		DDRC |= (0<<SW_2);	//switch 2 as input
+ 1224               		.loc 1 81 0
+ 1225 05a8 84B3      		in r24,0x14
+ 1226 05aa 84BB      		out 0x14,r24
+  82:src/morse.c   **** 
+ 1227               		.loc 1 82 0
+ 1228 05ac 84B3      		in r24,0x14
+ 1229 05ae 84BB      		out 0x14,r24
+  84:src/morse.c   **** 	val = readEncoder();	//first encoder value reading
+ 1230               		.loc 1 84 0
+ 1231 05b0 0E94 0000 		call LCD_Initalize
+ 1232               	.LVL108:
+  85:src/morse.c   **** 	sei();					//timers enabled
+ 1233               		.loc 1 85 0
+ 1234 05b4 0E94 0000 		call readEncoder
+ 1235               	.LVL109:
+ 1236 05b8 8093 0000 		sts val,r24
+  86:src/morse.c   **** }
+ 1237               		.loc 1 86 0
+ 1238               	/* #APP */
+ 1239               	 ;  86 "src/morse.c" 1
+ 1240 05bc 7894      		sei
+ 1241               	 ;  0 "" 2
+ 1242               	/* #NOAPP */
+ 1243 05be 0895      		ret
+ 1244               		.cfi_endproc
+ 1245               	.LFE11:
+ 1247               	.global	readEncoderCounter
+ 1249               	readEncoderCounter:
+ 1250               	.LFB23:
+ 322:src/morse.c   **** 
+ 323:src/morse.c   **** void readEncoderCounter ()		//monitoring encoder counter 
+ 324:src/morse.c   **** {								//increase or decrease 
+ 1251               		.loc 1 324 0
+ 1252               		.cfi_startproc
+ 1253               	/* prologue: function */
+ 1254               	/* frame size = 0 */
+ 1255               	/* stack size = 0 */
+ 1256               	.L__stack_usage = 0
+ 1257               	.LVL110:
+ 325:src/morse.c   **** 	uint8_t val_tmp = 0;						
+ 326:src/morse.c   **** 	val_tmp = readEncoder();			
+ 1258               		.loc 1 326 0
+ 1259 05c0 0E94 0000 		call readEncoder
+ 1260               	.LVL111:
+ 327:src/morse.c   **** 
+ 328:src/morse.c   **** 	if(val != val_tmp)
+ 1261               		.loc 1 328 0
+ 1262 05c4 9091 0000 		lds r25,val
+ 1263 05c8 9817      		cp r25,r24
+ 1264 05ca 01F0      		breq .L65
+ 329:src/morse.c   **** 	{
+ 330:src/morse.c   **** 		if((val==3 && val_tmp==1))
+ 1265               		.loc 1 330 0
+ 1266 05cc 9330      		cpi r25,lo8(3)
+ 1267 05ce 01F4      		brne .L66
+ 1268               		.loc 1 330 0 is_stmt 0 discriminator 1
+ 1269 05d0 8130      		cpi r24,lo8(1)
+ 1270 05d2 01F4      		brne .L67
+ 331:src/morse.c   **** 			{
+ 332:src/morse.c   **** 			encoderCount ++;	//clockwise turn
+ 1271               		.loc 1 332 0 is_stmt 1
+ 1272 05d4 2091 0000 		lds r18,encoderCount
+ 1273 05d8 3091 0000 		lds r19,encoderCount+1
+ 1274 05dc 2F5F      		subi r18,-1
+ 1275 05de 3F4F      		sbci r19,-1
+ 1276 05e0 00C0      		rjmp .L68
+ 1277               	.L66:
+ 333:src/morse.c   **** 			}
+ 334:src/morse.c   **** 		else if((val==2 && val_tmp==0))
+ 1278               		.loc 1 334 0
+ 1279 05e2 9230      		cpi r25,lo8(2)
+ 1280 05e4 01F4      		brne .L67
+ 1281               		.loc 1 334 0 is_stmt 0 discriminator 1
+ 1282 05e6 8111      		cpse r24,__zero_reg__
+ 1283 05e8 00C0      		rjmp .L67
+ 335:src/morse.c   **** 			{
+ 336:src/morse.c   **** 			encoderCount --;	//counter-clockwise turn
+ 1284               		.loc 1 336 0 is_stmt 1
+ 1285 05ea 2091 0000 		lds r18,encoderCount
+ 1286 05ee 3091 0000 		lds r19,encoderCount+1
+ 1287 05f2 2150      		subi r18,1
+ 1288 05f4 3109      		sbc r19,__zero_reg__
+ 1289               	.L68:
+ 1290 05f6 3093 0000 		sts encoderCount+1,r19
+ 1291 05fa 2093 0000 		sts encoderCount,r18
+ 1292               	.L67:
+ 337:src/morse.c   **** 			}
+ 338:src/morse.c   **** 		val = val_tmp;
+ 1293               		.loc 1 338 0
+ 1294 05fe 8093 0000 		sts val,r24
+ 1295               	.L65:
+ 339:src/morse.c   **** 		}
+ 340:src/morse.c   **** 	delay_ms(1);
+ 1296               		.loc 1 340 0
+ 1297 0602 81E0      		ldi r24,lo8(1)
+ 1298 0604 90E0      		ldi r25,0
+ 1299               	.LVL112:
+ 1300 0606 0C94 0000 		jmp delay_ms
+ 1301               	.LVL113:
+ 1302               		.cfi_endproc
+ 1303               	.LFE23:
+ 1305               	.global	__vector_4
+ 1307               	__vector_4:
+ 1308               	.LFB24:
+ 341:src/morse.c   **** }
+ 342:src/morse.c   **** 
+ 343:src/morse.c   **** ISR(TIMER2_COMP_vect)	//interrupt handle 
+ 344:src/morse.c   **** {
+ 1309               		.loc 1 344 0
+ 1310               		.cfi_startproc
+ 1311 060a 1F92      		push r1
+ 1312               	.LCFI36:
+ 1313               		.cfi_def_cfa_offset 3
+ 1314               		.cfi_offset 1, -2
+ 1315 060c 0F92      		push r0
+ 1316               	.LCFI37:
+ 1317               		.cfi_def_cfa_offset 4
+ 1318               		.cfi_offset 0, -3
+ 1319 060e 0FB6      		in r0,__SREG__
+ 1320 0610 0F92      		push r0
+ 1321 0612 1124      		clr __zero_reg__
+ 1322 0614 8F93      		push r24
+ 1323               	.LCFI38:
+ 1324               		.cfi_def_cfa_offset 5
+ 1325               		.cfi_offset 24, -4
+ 1326 0616 9F93      		push r25
+ 1327               	.LCFI39:
+ 1328               		.cfi_def_cfa_offset 6
+ 1329               		.cfi_offset 25, -5
+ 1330               	/* prologue: Signal */
+ 1331               	/* frame size = 0 */
+ 1332               	/* stack size = 5 */
+ 1333               	.L__stack_usage = 5
+ 345:src/morse.c   **** 	uint16_t n;
+ 346:src/morse.c   **** 
+ 347:src/morse.c   **** 	n = Timer1;		//100Hz Timer1
+ 1334               		.loc 1 347 0
+ 1335 0618 8091 0000 		lds r24,Timer1
+ 1336 061c 9091 0000 		lds r25,Timer1+1
+ 1337               	.LVL114:
+ 348:src/morse.c   **** 	if (n) Timer1 = --n;
+ 1338               		.loc 1 348 0
+ 1339 0620 0097      		sbiw r24,0
+ 1340 0622 01F0      		breq .L70
+ 1341               		.loc 1 348 0 is_stmt 0 discriminator 1
+ 1342 0624 0197      		sbiw r24,1
+ 1343               	.LVL115:
+ 1344 0626 9093 0000 		sts Timer1+1,r25
+ 1345 062a 8093 0000 		sts Timer1,r24
+ 1346               	.L70:
+ 349:src/morse.c   **** 	n = Timer2;		//100Hz Timer2
+ 1347               		.loc 1 349 0 is_stmt 1
+ 1348 062e 8091 0000 		lds r24,Timer2
+ 1349 0632 9091 0000 		lds r25,Timer2+1
+ 1350               	.LVL116:
+ 350:src/morse.c   **** 	if (n) Timer2 = --n;
+ 1351               		.loc 1 350 0
+ 1352 0636 0097      		sbiw r24,0
+ 1353 0638 01F0      		breq .L69
+ 1354               		.loc 1 350 0 is_stmt 0 discriminator 1
+ 1355 063a 0197      		sbiw r24,1
+ 1356               	.LVL117:
+ 1357 063c 9093 0000 		sts Timer2+1,r25
+ 1358 0640 8093 0000 		sts Timer2,r24
+ 1359               	.L69:
+ 1360               	/* epilogue start */
+ 351:src/morse.c   **** }
+ 1361               		.loc 1 351 0 is_stmt 1
+ 1362 0644 9F91      		pop r25
+ 1363 0646 8F91      		pop r24
+ 1364               	.LVL118:
+ 1365 0648 0F90      		pop r0
+ 1366 064a 0FBE      		out __SREG__,r0
+ 1367 064c 0F90      		pop r0
+ 1368 064e 1F90      		pop r1
+ 1369 0650 1895      		reti
+ 1370               		.cfi_endproc
+ 1371               	.LFE24:
+ 1373               	.global	morseTable
+ 1374               		.section	.rodata
+ 1377               	morseTable:
+ 1378 0000 0000      		.word	0
+ 1379 0002 0100      		.word	1
+ 1380 0004 0200      		.word	2
+ 1381 0006 0000 0000 		.zero	8
+ 1381      0000 0000 
+ 1382 000e 0100      		.word	1
+ 1383 0010 0000      		.word	0
+ 1384 0012 0000      		.word	0
+ 1385 0014 0000      		.word	0
+ 1386 0016 0200      		.word	2
+ 1387 0018 0000 0000 		.zero	4
+ 1388 001c 0100      		.word	1
+ 1389 001e 0000      		.word	0
+ 1390 0020 0100      		.word	1
+ 1391 0022 0000      		.word	0
+ 1392 0024 0200      		.word	2
+ 1393 0026 0000 0000 		.zero	4
+ 1394 002a 0100      		.word	1
+ 1395 002c 0000      		.word	0
+ 1396 002e 0000      		.word	0
+ 1397 0030 0200      		.word	2
+ 1398 0032 0000 0000 		.zero	6
+ 1398      0000 
+ 1399 0038 0000      		.word	0
+ 1400 003a 0200      		.word	2
+ 1401 003c 0000 0000 		.zero	10
+ 1401      0000 0000 
+ 1401      0000 
+ 1402 0046 0000      		.word	0
+ 1403 0048 0000      		.word	0
+ 1404 004a 0100      		.word	1
+ 1405 004c 0000      		.word	0
+ 1406 004e 0200      		.word	2
+ 1407 0050 0000 0000 		.zero	4
+ 1408 0054 0100      		.word	1
+ 1409 0056 0000      		.word	0
+ 1410 0058 0000      		.word	0
+ 1411 005a 0200      		.word	2
+ 1412 005c 0000 0000 		.zero	6
+ 1412      0000 
+ 1413 0062 0000      		.word	0
+ 1414 0064 0000      		.word	0
+ 1415 0066 0000      		.word	0
+ 1416 0068 0000      		.word	0
+ 1417 006a 0200      		.word	2
+ 1418 006c 0000 0000 		.zero	4
+ 1419 0070 0000      		.word	0
+ 1420 0072 0000      		.word	0
+ 1421 0074 0200      		.word	2
+ 1422 0076 0000 0000 		.zero	8
+ 1422      0000 0000 
+ 1423 007e 0000      		.word	0
+ 1424 0080 0100      		.word	1
+ 1425 0082 0100      		.word	1
+ 1426 0084 0100      		.word	1
+ 1427 0086 0200      		.word	2
+ 1428 0088 0000 0000 		.zero	4
+ 1429 008c 0100      		.word	1
+ 1430 008e 0000      		.word	0
+ 1431 0090 0100      		.word	1
+ 1432 0092 0200      		.word	2
+ 1433 0094 0000 0000 		.zero	6
+ 1433      0000 
+ 1434 009a 0000      		.word	0
+ 1435 009c 0100      		.word	1
+ 1436 009e 0000      		.word	0
+ 1437 00a0 0000      		.word	0
+ 1438 00a2 0200      		.word	2
+ 1439 00a4 0000 0000 		.zero	4
+ 1440 00a8 0100      		.word	1
+ 1441 00aa 0100      		.word	1
+ 1442 00ac 0200      		.word	2
+ 1443 00ae 0000 0000 		.zero	8
+ 1443      0000 0000 
+ 1444 00b6 0100      		.word	1
+ 1445 00b8 0000      		.word	0
+ 1446 00ba 0200      		.word	2
+ 1447 00bc 0000 0000 		.zero	8
+ 1447      0000 0000 
+ 1448 00c4 0100      		.word	1
+ 1449 00c6 0100      		.word	1
+ 1450 00c8 0100      		.word	1
+ 1451 00ca 0200      		.word	2
+ 1452 00cc 0000 0000 		.zero	6
+ 1452      0000 
+ 1453 00d2 0000      		.word	0
+ 1454 00d4 0100      		.word	1
+ 1455 00d6 0100      		.word	1
+ 1456 00d8 0000      		.word	0
+ 1457 00da 0200      		.word	2
+ 1458 00dc 0000 0000 		.zero	4
+ 1459 00e0 0100      		.word	1
+ 1460 00e2 0100      		.word	1
+ 1461 00e4 0000      		.word	0
+ 1462 00e6 0100      		.word	1
+ 1463 00e8 0200      		.word	2
+ 1464 00ea 0000 0000 		.zero	4
+ 1465 00ee 0000      		.word	0
+ 1466 00f0 0100      		.word	1
+ 1467 00f2 0000      		.word	0
+ 1468 00f4 0200      		.word	2
+ 1469 00f6 0000 0000 		.zero	6
+ 1469      0000 
+ 1470 00fc 0000      		.word	0
+ 1471 00fe 0000      		.word	0
+ 1472 0100 0000      		.word	0
+ 1473 0102 0200      		.word	2
+ 1474 0104 0000 0000 		.zero	6
+ 1474      0000 
+ 1475 010a 0100      		.word	1
+ 1476 010c 0200      		.word	2
+ 1477 010e 0000 0000 		.zero	10
+ 1477      0000 0000 
+ 1477      0000 
+ 1478 0118 0000      		.word	0
+ 1479 011a 0000      		.word	0
+ 1480 011c 0100      		.word	1
+ 1481 011e 0200      		.word	2
+ 1482 0120 0000 0000 		.zero	6
+ 1482      0000 
+ 1483 0126 0000      		.word	0
+ 1484 0128 0100      		.word	1
+ 1485 012a 0100      		.word	1
+ 1486 012c 0200      		.word	2
+ 1487 012e 0000 0000 		.zero	6
+ 1487      0000 
+ 1488 0134 0000      		.word	0
+ 1489 0136 0000      		.word	0
+ 1490 0138 0000      		.word	0
+ 1491 013a 0100      		.word	1
+ 1492 013c 0200      		.word	2
+ 1493 013e 0000 0000 		.zero	4
+ 1494 0142 0100      		.word	1
+ 1495 0144 0000      		.word	0
+ 1496 0146 0000      		.word	0
+ 1497 0148 0100      		.word	1
+ 1498 014a 0200      		.word	2
+ 1499 014c 0000 0000 		.zero	4
+ 1500 0150 0100      		.word	1
+ 1501 0152 0000      		.word	0
+ 1502 0154 0100      		.word	1
+ 1503 0156 0200      		.word	2
+ 1504 0158 0000 0000 		.zero	6
+ 1504      0000 
+ 1505 015e 0100      		.word	1
+ 1506 0160 0100      		.word	1
+ 1507 0162 0000      		.word	0
+ 1508 0164 0000      		.word	0
+ 1509 0166 0200      		.word	2
+ 1510 0168 0000 0000 		.zero	4
+ 1511 016c 0000      		.word	0
+ 1512 016e 0100      		.word	1
+ 1513 0170 0100      		.word	1
+ 1514 0172 0100      		.word	1
+ 1515 0174 0100      		.word	1
+ 1516 0176 0200      		.word	2
+ 1517 0178 0000      		.zero	2
+ 1518 017a 0000      		.word	0
+ 1519 017c 0000      		.word	0
+ 1520 017e 0100      		.word	1
+ 1521 0180 0100      		.word	1
+ 1522 0182 0100      		.word	1
+ 1523 0184 0200      		.word	2
+ 1524 0186 0000      		.zero	2
+ 1525 0188 0000      		.word	0
+ 1526 018a 0000      		.word	0
+ 1527 018c 0000      		.word	0
+ 1528 018e 0100      		.word	1
+ 1529 0190 0100      		.word	1
+ 1530 0192 0200      		.word	2
+ 1531 0194 0000      		.zero	2
+ 1532 0196 0000      		.word	0
+ 1533 0198 0000      		.word	0
+ 1534 019a 0000      		.word	0
+ 1535 019c 0000      		.word	0
+ 1536 019e 0100      		.word	1
+ 1537 01a0 0200      		.word	2
+ 1538 01a2 0000      		.zero	2
+ 1539 01a4 0000      		.word	0
+ 1540 01a6 0000      		.word	0
+ 1541 01a8 0000      		.word	0
+ 1542 01aa 0000      		.word	0
+ 1543 01ac 0000      		.word	0
+ 1544 01ae 0200      		.word	2
+ 1545 01b0 0000      		.zero	2
+ 1546 01b2 0100      		.word	1
+ 1547 01b4 0000      		.word	0
+ 1548 01b6 0000      		.word	0
+ 1549 01b8 0000      		.word	0
+ 1550 01ba 0000      		.word	0
+ 1551 01bc 0200      		.word	2
+ 1552 01be 0000      		.zero	2
+ 1553 01c0 0100      		.word	1
+ 1554 01c2 0100      		.word	1
+ 1555 01c4 0000      		.word	0
+ 1556 01c6 0000      		.word	0
+ 1557 01c8 0000      		.word	0
+ 1558 01ca 0200      		.word	2
+ 1559 01cc 0000      		.zero	2
+ 1560 01ce 0100      		.word	1
+ 1561 01d0 0100      		.word	1
+ 1562 01d2 0100      		.word	1
+ 1563 01d4 0000      		.word	0
+ 1564 01d6 0000      		.word	0
+ 1565 01d8 0200      		.word	2
+ 1566 01da 0000      		.zero	2
+ 1567 01dc 0100      		.word	1
+ 1568 01de 0100      		.word	1
+ 1569 01e0 0100      		.word	1
+ 1570 01e2 0100      		.word	1
+ 1571 01e4 0000      		.word	0
+ 1572 01e6 0200      		.word	2
+ 1573 01e8 0000      		.zero	2
+ 1574 01ea 0100      		.word	1
+ 1575 01ec 0100      		.word	1
+ 1576 01ee 0100      		.word	1
+ 1577 01f0 0100      		.word	1
+ 1578 01f2 0100      		.word	1
+ 1579 01f4 0200      		.word	2
+ 1580 01f6 0000      		.zero	2
+ 1581 01f8 0000 0000 		.zero	14
+ 1581      0000 0000 
+ 1581      0000 0000 
+ 1581      0000 
+ 1582               	.global	encoderTmp
+ 1583               		.section .bss
+ 1586               	encoderTmp:
+ 1587 0000 0000      		.zero	2
+ 1588               	.global	btnFlag
+ 1591               	btnFlag:
+ 1592 0002 0000      		.zero	2
+ 1593               	.global	waitTime
+ 1594               		.section	.rodata
+ 1597               	waitTime:
+ 1598 0206 02        		.byte	2
+ 1599               	.global	flag
+ 1600               		.section .bss
+ 1603               	flag:
+ 1604 0004 0000      		.zero	2
+ 1605               	.global	lcdPos
+ 1608               	lcdPos:
+ 1609 0006 0000      		.zero	2
+ 1610               	.global	Timer2
+ 1613               	Timer2:
+ 1614 0008 0000      		.zero	2
+ 1615               	.global	Timer1
+ 1618               	Timer1:
+ 1619 000a 0000      		.zero	2
+ 1620               	.global	encodedMessage
+ 1623               	encodedMessage:
+ 1624 000c 0000 0000 		.zero	30
+ 1624      0000 0000 
+ 1624      0000 0000 
+ 1624      0000 0000 
+ 1624      0000 0000 
+ 1625               	.global	morseDecode
+ 1628               	morseDecode:
+ 1629 002a 0000 0000 		.zero	60
+ 1629      0000 0000 
+ 1629      0000 0000 
+ 1629      0000 0000 
+ 1629      0000 0000 
+ 1630               	.global	morseInput
+ 1633               	morseInput:
+ 1634 0066 0000 0000 		.zero	60
+ 1634      0000 0000 
+ 1634      0000 0000 
+ 1634      0000 0000 
+ 1634      0000 0000 
+ 1635               	.global	userInput
+ 1638               	userInput:
+ 1639 00a2 0000 0000 		.zero	30
+ 1639      0000 0000 
+ 1639      0000 0000 
+ 1639      0000 0000 
+ 1639      0000 0000 
+ 1640               	.global	lcdIntBuffer
+ 1643               	lcdIntBuffer:
+ 1644 00c0 0000 0000 		.zero	4
+ 1645               	.global	wpmSpeed
+ 1646               		.data
+ 1649               	wpmSpeed:
+ 1650 0000 0A00      		.word	10
+ 1651               	.global	asciiNum
+ 1652               		.section .bss
+ 1655               	asciiNum:
+ 1656 00c4 0000      		.zero	2
+ 1657               	.global	val
+ 1660               	val:
+ 1661 00c6 00        		.zero	1
+ 1662               	.global	encoderCount
+ 1665               	encoderCount:
+ 1666 00c7 0000      		.zero	2
+ 1667               		.text
+ 1668               	.Letext0:
+ 1669               		.file 4 "/usr/lib/avr/include/stdint.h"
+ 1670               		.file 5 "src/HD44780.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 morse.c
+     /tmp/ccXOL60r.s:2      *ABS*:000000000000003e __SP_H__
+     /tmp/ccXOL60r.s:3      *ABS*:000000000000003d __SP_L__
+     /tmp/ccXOL60r.s:4      *ABS*:000000000000003f __SREG__
+     /tmp/ccXOL60r.s:5      *ABS*:0000000000000000 __tmp_reg__
+     /tmp/ccXOL60r.s:6      *ABS*:0000000000000001 __zero_reg__
+     /tmp/ccXOL60r.s:12     .text:0000000000000000 delay_ms
+     /tmp/ccXOL60r.s:100    .text:0000000000000062 LCD_move.part.0
+     /tmp/ccXOL60r.s:127    .text:0000000000000076 LCD_move
+     /tmp/ccXOL60r.s:166    .text:0000000000000098 LCD_moveMode
+     /tmp/ccXOL60r.s:208    .text:00000000000000bc blinkLed
+     /tmp/ccXOL60r.s:248    .text:00000000000000d4 broadcast
+     /tmp/ccXOL60r.s:1638   .bss:00000000000000a2 userInput
+     /tmp/ccXOL60r.s:1633   .bss:0000000000000066 morseInput
+     /tmp/ccXOL60r.s:1377   .rodata:0000000000000000 morseTable
+     /tmp/ccXOL60r.s:575    .text:0000000000000248 LCD_clearLine
+     /tmp/ccXOL60r.s:606    .text:0000000000000258 dial
+     /tmp/ccXOL60r.s:1591   .bss:0000000000000002 btnFlag
+     /tmp/ccXOL60r.s:1665   .bss:00000000000000c7 encoderCount
+     /tmp/ccXOL60r.s:1655   .bss:00000000000000c4 asciiNum
+     /tmp/ccXOL60r.s:1608   .bss:0000000000000006 lcdPos
+     /tmp/ccXOL60r.s:1618   .bss:000000000000000a Timer1
+     /tmp/ccXOL60r.s:1649   .data:0000000000000000 wpmSpeed
+     /tmp/ccXOL60r.s:912    .text:000000000000045c messageDisplay
+     /tmp/ccXOL60r.s:1057   .text:000000000000050a isButton
+     /tmp/ccXOL60r.s:1085   .text:000000000000051c setWpmSpeed
+     /tmp/ccXOL60r.s:1643   .bss:00000000000000c0 lcdIntBuffer
+     /tmp/ccXOL60r.s:1152   .text:0000000000000570 readEncoder
+     /tmp/ccXOL60r.s:1185   .text:0000000000000580 initializeSetup
+     /tmp/ccXOL60r.s:1660   .bss:00000000000000c6 val
+     /tmp/ccXOL60r.s:1249   .text:00000000000005c0 readEncoderCounter
+     /tmp/ccXOL60r.s:1307   .text:000000000000060a __vector_4
+     /tmp/ccXOL60r.s:1613   .bss:0000000000000008 Timer2
+     /tmp/ccXOL60r.s:1586   .bss:0000000000000000 encoderTmp
+     /tmp/ccXOL60r.s:1597   .rodata:0000000000000206 waitTime
+     /tmp/ccXOL60r.s:1603   .bss:0000000000000004 flag
+     /tmp/ccXOL60r.s:1623   .bss:000000000000000c encodedMessage
+     /tmp/ccXOL60r.s:1628   .bss:000000000000002a morseDecode
+
+UNDEFINED SYMBOLS
+LCD_WriteCommand
+LCD_GoTo
+LCD_WriteData
+LCD_WriteText
+LCD_Clear
+__divmodhi4
+LCD_Home
+__itoa_ncheck
+LCD_Initalize
+__do_copy_data
+__do_clear_bss
