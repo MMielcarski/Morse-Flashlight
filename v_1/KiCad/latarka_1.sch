@@ -1,35 +1,5 @@
 EESchema Schematic File Version 2
 LIBS:latarka_1-rescue
-LIBS:power
-LIBS:device
-LIBS:transistors
-LIBS:conn
-LIBS:linear
-LIBS:regul
-LIBS:74xx
-LIBS:cmos4000
-LIBS:adc-dac
-LIBS:memory
-LIBS:xilinx
-LIBS:microcontrollers
-LIBS:dsp
-LIBS:microchip
-LIBS:analog_switches
-LIBS:motorola
-LIBS:texas
-LIBS:intel
-LIBS:audio
-LIBS:interface
-LIBS:digital-audio
-LIBS:philips
-LIBS:display
-LIBS:cypress
-LIBS:siliconi
-LIBS:opto
-LIBS:atmel
-LIBS:contrib
-LIBS:valves
-LIBS:pin_array_7x2
 LIBS:latarka_1-cache
 EELAYER 25 0
 EELAYER END
@@ -90,9 +60,7 @@ F 3 "" H 4960 2880 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 5790 2440 3    60   Input ~ 0
-PD6_RS
-Text GLabel 4040 5010 2    60   Input ~ 0
-PD6_RS
+PC0_RS
 $Comp
 L GND #PWR?
 U 1 1 5AA83B1E
@@ -113,21 +81,13 @@ NoConn ~ 6190 2440
 NoConn ~ 6290 2440
 NoConn ~ 6390 2440
 Text GLabel 6490 2440 3    60   Input ~ 0
-PD0
+PD6_ENC4
 Text GLabel 6590 2440 3    60   Input ~ 0
-PD1
+PD5_ENC5
 Text GLabel 6690 2440 3    60   Input ~ 0
-PD2
+PD4_ENC6
 Text GLabel 6790 2440 3    60   Input ~ 0
-PD3
-Text GLabel 4040 4410 2    60   Input ~ 0
-PD0
-Text GLabel 4040 4510 2    60   Input ~ 0
-PD1
-Text GLabel 4040 4610 2    60   Input ~ 0
-PD2
-Text GLabel 4040 4710 2    60   Input ~ 0
-PD3
+PD3_ENC7
 $Comp
 L AVR-ISP-10 CON?
 U 1 1 5AA83F98
@@ -229,14 +189,10 @@ Wire Wire Line
 Wire Wire Line
 	5490 2500 5490 2440
 Wire Wire Line
-	4960 2500 5310 2500
-Wire Wire Line
-	5310 2500 5490 2500
+	4960 2500 5490 2500
 Connection ~ 5310 2500
 Wire Wire Line
-	4960 2880 5310 2880
-Wire Wire Line
-	5310 2880 5590 2880
+	4960 2880 5590 2880
 Wire Wire Line
 	5310 2880 5310 2800
 Wire Wire Line
@@ -247,11 +203,7 @@ Wire Wire Line
 Wire Wire Line
 	6780 3610 6400 3610
 Wire Wire Line
-	6400 3510 6400 3610
-Wire Wire Line
-	6400 3610 6400 3710
-Wire Wire Line
-	6400 3710 6400 3810
+	6400 3510 6400 3810
 Connection ~ 6400 3610
 Connection ~ 6400 3710
 Wire Wire Line
@@ -265,15 +217,9 @@ Wire Wire Line
 Wire Wire Line
 	5750 3810 6150 3810
 Wire Wire Line
-	2020 1180 2020 1440
-Wire Wire Line
-	2020 1440 2020 1710
+	2020 1180 2020 1710
 Wire Wire Line
 	1640 1090 1640 1180
-Text GLabel 4040 4910 2    60   Input ~ 0
-PD5_encA
-Text GLabel 4040 2710 2    60   Input ~ 0
-PB1_encSW
 $Comp
 L Rotary_Encoder_Switch SW?
 U 1 1 5AA85E3D
@@ -330,9 +276,7 @@ F 3 "" H 5590 4890 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5250 4740 5590 4740
-Wire Wire Line
-	5590 4740 6190 4740
+	5250 4740 6190 4740
 Connection ~ 5590 4740
 $Comp
 L GND #PWR?
@@ -354,9 +298,9 @@ Wire Wire Line
 Wire Wire Line
 	5890 5040 5590 5040
 Text GLabel 5590 4440 0    60   Input ~ 0
-PD5_encA
+PA1_encA
 Text GLabel 5590 5040 0    60   Input ~ 0
-PD4_encB
+PA2_encB
 $Comp
 L C C?
 U 1 1 5AA875B9
@@ -391,11 +335,9 @@ F 3 "" H 7280 4340 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 7490 4640 2    60   Input ~ 0
-PB1_encSW
+PA3_encSW
 Wire Wire Line
-	6790 4640 7280 4640
-Wire Wire Line
-	7280 4640 7490 4640
+	6790 4640 7490 4640
 Wire Wire Line
 	7280 4940 6790 4940
 Wire Wire Line
@@ -468,13 +410,7 @@ F 3 "" H 8840 3080 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	8990 2250 8990 2520
-Wire Wire Line
-	8990 2520 8990 2810
-Wire Wire Line
-	8990 2810 8990 3080
-Wire Wire Line
-	8990 3080 8990 3220
+	8990 2250 8990 3220
 Connection ~ 8990 2520
 Connection ~ 8990 2810
 $Comp
@@ -512,9 +448,7 @@ F 3 "" H 8310 2880 50  0001 L CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 7810 2880 0    60   Input ~ 0
-PB0_LED
-Text GLabel 4040 2610 2    60   Input ~ 0
-PB0_LED
+PC4_LED
 $Comp
 L R R?
 U 1 1 5AA8A277
@@ -538,11 +472,7 @@ F 3 "" H 8410 2380 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8690 2250 8690 2520
-Wire Wire Line
-	8690 2520 8690 2810
-Wire Wire Line
-	8690 2810 8690 3080
+	8690 2250 8690 3080
 Connection ~ 8690 2520
 Connection ~ 8690 2810
 Wire Wire Line
@@ -570,9 +500,7 @@ F 3 "" H 2590 1240 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2890 1060 2890 1240
-Wire Wire Line
-	2890 1240 2890 1410
+	2890 1060 2890 1410
 $Comp
 L +5V #PWR?
 U 1 1 5AA8B97D
@@ -597,9 +525,7 @@ F 3 "" H 3040 5410 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2990 5410 3040 5410
-Wire Wire Line
-	3040 5410 3090 5410
+	2990 5410 3090 5410
 Connection ~ 3040 5410
 $Comp
 L C C?
@@ -624,9 +550,7 @@ F 3 "" H 3490 1240 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	3190 1060 3190 1240
-Wire Wire Line
-	3190 1240 3190 1410
+	3190 1060 3190 1410
 $Comp
 L +5V #PWR?
 U 1 1 5AA8C001
@@ -662,9 +586,7 @@ F 3 "" H 1870 3210 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1690 2910 1870 2910
-Wire Wire Line
-	1870 2910 2040 2910
+	1690 2910 2040 2910
 $Comp
 L +5V #PWR?
 U 1 1 5AA8C8AF
@@ -680,19 +602,12 @@ Connection ~ 1870 2910
 NoConn ~ 4040 4210
 NoConn ~ 4040 4110
 NoConn ~ 4040 4010
-NoConn ~ 4040 3910
 NoConn ~ 4040 3810
-NoConn ~ 4040 3710
-NoConn ~ 4040 3610
-NoConn ~ 4040 3510
 NoConn ~ 4040 3010
 NoConn ~ 4040 2410
 NoConn ~ 4040 2310
 NoConn ~ 4040 2210
 NoConn ~ 4040 2110
-NoConn ~ 4040 2010
-NoConn ~ 4040 1910
-NoConn ~ 4040 1810
 NoConn ~ 4040 1710
 NoConn ~ 2040 2110
 NoConn ~ 2040 2510
@@ -714,10 +629,6 @@ Wire Wire Line
 Wire Wire Line
 	1740 1440 2020 1440
 Connection ~ 2020 1440
-Text GLabel 4040 2810 2    60   Input ~ 0
-PB2_SW1
-Text GLabel 4040 2910 2    60   Input ~ 0
-PB3_SW2
 $Comp
 L SW_PUSH SW?
 U 1 1 5AA937C3
@@ -842,9 +753,9 @@ Wire Wire Line
 Wire Wire Line
 	9240 4740 9240 5010
 Text GLabel 9240 4000 2    60   Input ~ 0
-PB2_SW1
+PC1_SW1
 Text GLabel 9240 5010 2    60   Input ~ 0
-PB3_SW2
+PC2_SW2
 $Comp
 L SW_PUSH SW?
 U 1 1 5AA97EA8
@@ -900,6 +811,33 @@ F 3 "" H 8240 1640 50  0001 C CNN
 	1    8240 1640
 	1    0    0    -1  
 $EndComp
+Text GLabel 4040 2010 2    60   Input ~ 0
+PA3_encSW
+Text GLabel 4040 1810 2    60   Input ~ 0
+PA1_encA
+Text GLabel 4040 1910 2    60   Input ~ 0
+PA2_encB
+Text GLabel 4040 3910 2    60   Input ~ 0
+PC4_LED
+Text GLabel 4040 3610 2    60   Input ~ 0
+PC1_SW1
+Text GLabel 4040 3710 2    60   Input ~ 0
+PC2_SW2
+Text GLabel 4040 5010 2    60   Input ~ 0
+PD6_ENC4
+Text GLabel 4040 4910 2    60   Input ~ 0
+PD5_ENC5
 Text GLabel 4040 4810 2    60   Input ~ 0
-PD4_encB
+PD4_ENC6
+Text GLabel 4040 4710 2    60   Input ~ 0
+PD3_ENC7
+Text GLabel 4040 3510 2    60   Input ~ 0
+PC0_RS
+NoConn ~ 4040 2610
+NoConn ~ 4040 2710
+NoConn ~ 4040 2810
+NoConn ~ 4040 2910
+NoConn ~ 4040 4410
+NoConn ~ 4040 4510
+NoConn ~ 4040 4610
 $EndSCHEMATC

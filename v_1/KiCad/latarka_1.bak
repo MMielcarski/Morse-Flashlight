@@ -1,35 +1,5 @@
 EESchema Schematic File Version 2
 LIBS:latarka_1-rescue
-LIBS:power
-LIBS:device
-LIBS:transistors
-LIBS:conn
-LIBS:linear
-LIBS:regul
-LIBS:74xx
-LIBS:cmos4000
-LIBS:adc-dac
-LIBS:memory
-LIBS:xilinx
-LIBS:microcontrollers
-LIBS:dsp
-LIBS:microchip
-LIBS:analog_switches
-LIBS:motorola
-LIBS:texas
-LIBS:intel
-LIBS:audio
-LIBS:interface
-LIBS:digital-audio
-LIBS:philips
-LIBS:display
-LIBS:cypress
-LIBS:siliconi
-LIBS:opto
-LIBS:atmel
-LIBS:contrib
-LIBS:valves
-LIBS:pin_array_7x2
 LIBS:latarka_1-cache
 EELAYER 25 0
 EELAYER END
@@ -90,9 +60,7 @@ F 3 "" H 4960 2880 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 5790 2440 3    60   Input ~ 0
-PD6_RS
-Text GLabel 4040 5010 2    60   Input ~ 0
-PD6_RS
+PC0_RS
 $Comp
 L GND #PWR?
 U 1 1 5AA83B1E
@@ -113,21 +81,13 @@ NoConn ~ 6190 2440
 NoConn ~ 6290 2440
 NoConn ~ 6390 2440
 Text GLabel 6490 2440 3    60   Input ~ 0
-PD0
+PD6_ENC4
 Text GLabel 6590 2440 3    60   Input ~ 0
-PD1
+PD5_ENC5
 Text GLabel 6690 2440 3    60   Input ~ 0
-PD2
+PD4_ENC6
 Text GLabel 6790 2440 3    60   Input ~ 0
-PD3
-Text GLabel 4040 4410 2    60   Input ~ 0
-PD0
-Text GLabel 4040 4510 2    60   Input ~ 0
-PD1
-Text GLabel 4040 4610 2    60   Input ~ 0
-PD2
-Text GLabel 4040 4710 2    60   Input ~ 0
-PD3
+PD3_ENC7
 $Comp
 L AVR-ISP-10 CON?
 U 1 1 5AA83F98
@@ -270,10 +230,6 @@ Wire Wire Line
 	2020 1440 2020 1710
 Wire Wire Line
 	1640 1090 1640 1180
-Text GLabel 4040 4910 2    60   Input ~ 0
-PD5_encA
-Text GLabel 4040 2710 2    60   Input ~ 0
-PB1_encSW
 $Comp
 L Rotary_Encoder_Switch SW?
 U 1 1 5AA85E3D
@@ -354,9 +310,9 @@ Wire Wire Line
 Wire Wire Line
 	5890 5040 5590 5040
 Text GLabel 5590 4440 0    60   Input ~ 0
-PD5_encA
+PA1_encA
 Text GLabel 5590 5040 0    60   Input ~ 0
-PD4_encB
+PA2_encB
 $Comp
 L C C?
 U 1 1 5AA875B9
@@ -391,7 +347,7 @@ F 3 "" H 7280 4340 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 7490 4640 2    60   Input ~ 0
-PB1_encSW
+PA3_encSW
 Wire Wire Line
 	6790 4640 7280 4640
 Wire Wire Line
@@ -512,9 +468,7 @@ F 3 "" H 8310 2880 50  0001 L CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 7810 2880 0    60   Input ~ 0
-PB0_LED
-Text GLabel 4040 2610 2    60   Input ~ 0
-PB0_LED
+PC4_LED
 $Comp
 L R R?
 U 1 1 5AA8A277
@@ -680,19 +634,12 @@ Connection ~ 1870 2910
 NoConn ~ 4040 4210
 NoConn ~ 4040 4110
 NoConn ~ 4040 4010
-NoConn ~ 4040 3910
 NoConn ~ 4040 3810
-NoConn ~ 4040 3710
-NoConn ~ 4040 3610
-NoConn ~ 4040 3510
 NoConn ~ 4040 3010
 NoConn ~ 4040 2410
 NoConn ~ 4040 2310
 NoConn ~ 4040 2210
 NoConn ~ 4040 2110
-NoConn ~ 4040 2010
-NoConn ~ 4040 1910
-NoConn ~ 4040 1810
 NoConn ~ 4040 1710
 NoConn ~ 2040 2110
 NoConn ~ 2040 2510
@@ -714,10 +661,6 @@ Wire Wire Line
 Wire Wire Line
 	1740 1440 2020 1440
 Connection ~ 2020 1440
-Text GLabel 4040 2810 2    60   Input ~ 0
-PB2_SW1
-Text GLabel 4040 2910 2    60   Input ~ 0
-PB3_SW2
 $Comp
 L SW_PUSH SW?
 U 1 1 5AA937C3
@@ -783,68 +726,68 @@ Wire Wire Line
 $Comp
 L SW_PUSH SW?
 U 1 1 5AA95DC9
-P 8940 4900
-F 0 "SW?" H 9090 5010 50  0000 C CNN
-F 1 "SW_PUSH" H 8940 4820 50  0000 C CNN
-F 2 "" H 8940 4900 50  0000 C CNN
-F 3 "" H 8940 4900 50  0000 C CNN
-	1    8940 4900
+P 8940 5010
+F 0 "SW?" H 9090 5120 50  0000 C CNN
+F 1 "SW_PUSH" H 8940 4930 50  0000 C CNN
+F 2 "" H 8940 5010 50  0000 C CNN
+F 3 "" H 8940 5010 50  0000 C CNN
+	1    8940 5010
 	1    0    0    -1  
 $EndComp
 $Comp
 L R R?
 U 1 1 5AA95DCF
-P 9240 4480
-F 0 "R?" V 9320 4480 50  0000 C CNN
-F 1 "1kR" V 9240 4480 50  0000 C CNN
-F 2 "" V 9170 4480 50  0001 C CNN
-F 3 "" H 9240 4480 50  0001 C CNN
-	1    9240 4480
+P 9240 4590
+F 0 "R?" V 9320 4590 50  0000 C CNN
+F 1 "1kR" V 9240 4590 50  0000 C CNN
+F 2 "" V 9170 4590 50  0001 C CNN
+F 3 "" H 9240 4590 50  0001 C CNN
+	1    9240 4590
 	-1   0    0    1   
 $EndComp
 $Comp
 L +5V #PWR?
 U 1 1 5AA95DD5
-P 9240 4330
-F 0 "#PWR?" H 9240 4180 50  0001 C CNN
-F 1 "+5V" H 9240 4470 50  0000 C CNN
-F 2 "" H 9240 4330 50  0001 C CNN
-F 3 "" H 9240 4330 50  0001 C CNN
-	1    9240 4330
+P 9240 4440
+F 0 "#PWR?" H 9240 4290 50  0001 C CNN
+F 1 "+5V" H 9240 4580 50  0000 C CNN
+F 2 "" H 9240 4440 50  0001 C CNN
+F 3 "" H 9240 4440 50  0001 C CNN
+	1    9240 4440
 	1    0    0    -1  
 $EndComp
 $Comp
 L GND #PWR?
 U 1 1 5AA95DDB
-P 8640 4900
-F 0 "#PWR?" H 8640 4650 50  0001 C CNN
-F 1 "GND" H 8640 4750 50  0000 C CNN
-F 2 "" H 8640 4900 50  0001 C CNN
-F 3 "" H 8640 4900 50  0001 C CNN
-	1    8640 4900
+P 8640 5010
+F 0 "#PWR?" H 8640 4760 50  0001 C CNN
+F 1 "GND" H 8640 4860 50  0000 C CNN
+F 2 "" H 8640 5010 50  0001 C CNN
+F 3 "" H 8640 5010 50  0001 C CNN
+	1    8640 5010
 	1    0    0    -1  
 $EndComp
 $Comp
 L C C?
 U 1 1 5AA95DE1
-P 8790 4630
-F 0 "C?" H 8815 4730 50  0000 L CNN
-F 1 "100nC" V 8950 4670 50  0000 L CNN
-F 2 "" H 8828 4480 50  0001 C CNN
-F 3 "" H 8790 4630 50  0001 C CNN
-	1    8790 4630
+P 8790 4740
+F 0 "C?" H 8815 4840 50  0000 L CNN
+F 1 "100nC" V 8950 4780 50  0000 L CNN
+F 2 "" H 8828 4590 50  0001 C CNN
+F 3 "" H 8790 4740 50  0001 C CNN
+	1    8790 4740
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
-	8640 4630 8640 4900
+	8640 4740 8640 5010
 Wire Wire Line
-	8940 4630 9240 4630
+	8940 4740 9240 4740
 Wire Wire Line
-	9240 4630 9240 4900
+	9240 4740 9240 5010
 Text GLabel 9240 4000 2    60   Input ~ 0
-PB2_SW1
-Text GLabel 9240 4900 2    60   Input ~ 0
-PB3_SW2
+PC1_SW1
+Text GLabel 9240 5010 2    60   Input ~ 0
+PC2_SW2
 $Comp
 L SW_PUSH SW?
 U 1 1 5AA97EA8
@@ -900,6 +843,26 @@ F 3 "" H 8240 1640 50  0001 C CNN
 	1    8240 1640
 	1    0    0    -1  
 $EndComp
+Text GLabel 4040 2010 2    60   Input ~ 0
+PA3_encSW
+Text GLabel 4040 1810 2    60   Input ~ 0
+PA1_encA
+Text GLabel 4040 1910 2    60   Input ~ 0
+PA2_encB
+Text GLabel 4040 3910 2    60   Input ~ 0
+PC4_LED
+Text GLabel 4040 3610 2    60   Input ~ 0
+PC1_SW1
+Text GLabel 4040 3710 2    60   Input ~ 0
+PC2_SW2
+Text GLabel 4040 5010 2    60   Input ~ 0
+PD6_ENC4
+Text GLabel 4040 4910 2    60   Input ~ 0
+PD5_ENC5
 Text GLabel 4040 4810 2    60   Input ~ 0
-PD4_encB
+PD4_ENC6
+Text GLabel 4040 4710 2    60   Input ~ 0
+PD3_ENC7
+Text GLabel 4040 3510 2    60   Input ~ 0
+PC0_RS
 $EndSCHEMATC
