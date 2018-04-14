@@ -18,10 +18,14 @@
 \usepackage{listings}											%obsluga wyswietlania kodu
 \usepackage{xcolor}												%
 \lstset { %														%
+	basicstyle=\ttfamily    									%
     language=C,													%
     backgroundcolor=\color{black!5}, % set backgroundcolor		%
     basicstyle=\footnotesize,% basic font setting				%
 }																%
+
+\renewcommand{\labelitemi}{--}			%zmiana wygladu znacznikow wypunktowania
+\renewcommand{\labelitemii}{--}		%
 %\usepackage[export]{adjustbox}
 
 %\title{Laboratorium Sieci Komputerowych SCR \\ Sprawozdanie \\~\\ Temat ćwiczenia: Podstawowe polecenia systemu LINUX \\~\\}
@@ -65,7 +69,7 @@
 		\begin{flushleft}
 			\large
 			\textit{Autor:}\\
-			\textsc{Maciej Mielcarski 235703\\Wydział Elektroniki W-4\\Automatyka i Robotyka} % Your name
+			\textsc{Maciej Mielcarski 235703}\\~\\Wydział Elektroniki W-4\\Automatyka i Robotyka % Your name
 		\end{flushleft}
 	\end{minipage}
 	~
@@ -116,7 +120,7 @@ Wykonany przeze mnie projekt obejmuje układ mikroprocesorowy, którego główna
 \subsection{Wykaz elementów}
 Układ, zmontowany na uniwersalnej płytce PCB zawiera następujące elementy wykonawcze:
 
-\begin{enumerate}
+\begin{itemize}
 	\item	mikroprocesor 8-bitowy Atmega 32
 
 	\item	wyświetlacz LCD rozdzielczości 8x2 znaki, zgodny ze standardem HD44780
@@ -128,7 +132,7 @@ Układ, zmontowany na uniwersalnej płytce PCB zawiera następujące elementy wy
 	\item	2 przyciski monostabilne z układem redukcji drgań styków
 
 	\item 	złącze IDC 10 SPI umożliwiające podłączenie programatora
-\end{enumerate}
+\end{itemize}
 
 \begin{figure}[h!]
 	\includegraphics[width=\textwidth]{img/morse_main_view.png}
@@ -139,7 +143,7 @@ Układ, zmontowany na uniwersalnej płytce PCB zawiera następujące elementy wy
 \newpage
 \section{Konstrukcja układu elektronicznego}
 \subsection{Schemat układu}
-Schemat został przygotowany za pomocą programu KiCad 4.0.7. Układ składa się z mikrokontrolera wraz z filtracją zasilania, modułu wyświetlacza LCD z potencjometrem regulującym kontrast, złącza IDC 10 umożliwiającego aktualizację oprogramowania, modułu enkodera wraz z przyciskiem, czterech diod LED sterowanych tranzystorem NPN oraz dwóch przycisków monostabilnych.
+Schemat został przygotowany za pomocą programu KiCad 4.0.7. Układ składa się z mikrokontrolera wraz z filtracją zasilania, modułu wyświetlacza LCD z potencjometrem regulującym kontrast, złącza IDC 10 umożliwiającego aktualizację oprogramowania, modułu enkodera wraz z przyciskiem, czterech diod LED sterowanych tranzystorem NPN oraz dwóch przycisków monostabilnych. Pełen schemat przedstawiony na Rys. 4.
 
 	
 \subsection{Kluczowe moduły układu}
@@ -150,7 +154,7 @@ Znaczącym elementem układu jest filtr eliminujący tzw. "drgania styków" - zj
 	\center
 	\includegraphics[scale=0.3]{img/drgania_stykow.png}
 	\caption{Moduł przycisku monostabilnego z filtrem eliminującym drgania styków}
-	\label{fig:zdjecie1}
+	\label{fig:zdjecie2}
 \end{figure}
 
 \newpage
@@ -161,7 +165,7 @@ W celu zapewnienia dobrej widoczności nadawanego sygnału zostały użyte 4 dio
 	\center
 	\includegraphics[scale=0.3]{img/sterowanie_diodami.png}
 	\caption{Moduł sterowania diodami nadawczymi}
-	\label{fig:zdjecie1}
+	\label{fig:zdjecie3}
 \end{figure}
 
 \section{Użytkowanie urządzenia}
@@ -170,16 +174,39 @@ Użytkownik obsługujący nadajnik Morse'a ma do dyspozycji szereg opcji związa
 \subsection{Menu główne}
 Po uruchomieniu urządzenia użytkownikowi ukazuje się menu główne, obejmujące następujące pozycje:
 
-\begin{enumerate}
-	\item	nadaj\newline
-Opcja umozliwiająca wprowadzenie wiadomości za pośrednictwem obrotóœ enkodera oraz nadanie jej po wciśnięciu enkodera. Po skończeniu transmisji pojawia się komunikat pytający, czy powtórzyć nadawanie. Podczas transmisji wyświetlana jest sekwencja nadawanego kodu morse'a.
-	\item	wyswietl\newline
+\begin{itemize}
+	\item	\textbf{nadaj}\newline
+Opcja umozliwiająca wprowadzenie wiadomości za pośrednictwem obrotów enkodera oraz nadanie jej po wciśnięciu enkodera. Po skończeniu transmisji pojawia się komunikat pytający, czy powtórzyć nadawanie. Podczas transmisji wyświetlana jest sekwencja nadawanego kodu morse'a.
+
+	\begin{itemize}
+	\item uruchomienie opcji: wciśnięcie przycisku enkodera
+	\item wybór znaku: obroty enkodera (zakres od a-z)
+	\item zatwierdzenie znaku: wciśnięcie przycisku enkodera
+	\item zatwierdzenie wiadomości: wciśnięcie przycisku enkodera przez co najmniej 2s
+	\item powtórzenie nadawania: lewy lub prawy przycisk
+	\end{itemize}
+
+	\item	\textbf{wyswietl}\newline
 Po wybraniu tej opcji, użytkownik ma okazję wyświetlić ostatnią nadaną przez niego wiadomość, zarówno w wersji znaków ASCII, jak i w kodzie morse'a. Za pomocą przycisków monostabilnych możliwe jest horyzontalne poruszanie się po wyświetlanej wiadomości. Wyjście z opcji przeglądania następuje po wciśnięciu przycisku enkodera.
-	\item	rozszyf.\newline
+
+	\begin{itemize}
+	\item uruchomienie opcji: wciśnięcie przycisku enkodera
+	\item przeglądanie wiadomości: lewy lub prawy przysik
+	\item zakończenie opcji: wciśnięcie przycisku enkodera
+	\end{itemize}
+
+	\item	\textbf{rozszyf.}\newline
 Jest to pozycja umożliwiająca wprowadzenie wiadomości w kodzie morse'a i przetworzenie jej na kod ASCII. Aktualnie nie jest dostępna, jednakże prace nad jej implementacją trwają.
-	\item	predk.\newline
+	\item	\textbf{predk.}\newline
 Za pomocą tej opcji możemy dostosować prędkość wyświetlanej przez nas wiadomości. Wartość ta wyrażana jest w słowach na minutę ( ang. wpm - words per minute), przy czym wartość 1 słowa na minutę oznacza prędkość wystarczającą do nadania słowa "PARIS" w ciągu jednej minuty (słowo "PARIS" zawira najbardziej standardowy przekrój liter w języku angielskim). Domyslnie, urządzenie nastawione jest na prędkość nadawania 10 wpm.
-\end{enumerate}
+
+	\begin{itemize}
+	\item uruchomienie opcji: wciśnięcie przycisku enkodera
+	\item wybór prędkości: obroty enkodera
+	\item zatwierdzenie prędkości: wciśnięcie przycisku enkodera
+	\end{itemize}
+
+\end{itemize}
 
 \section{Kod programu}
 
@@ -189,25 +216,20 @@ Za pomocą tej opcji możemy dostosować prędkość wyświetlanej przez nas wia
 \begin{lstlisting}
 #include "morse.h"
 
-int main(void)
-{
-int menu = 0;		
-int btn = 0;		
-int menuEnc = 0;	
-
+int main(void){
+	int menu = 0;		
+	int btn = 0;		
+	int menuEnc = 0;	
 initializeSetup();
-
 while(1)
 {
-readEncoderCounter();
-
+	readEncoderCounter();
 if(btn == 0)		
 {
 	if(encoderCount < 0) encoderCount = 0;	
 	if(encoderCount > 3) encoderCount = 3;	
 	menuEnc = encoderCount;
 }
-
 if(menu == 0)		
 {
 	LCD_Home();
@@ -232,9 +254,9 @@ else if(menu ==1)
 				LCD_Clear();
 				encoderCount=0;
 				delay_ms(800);
-				LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
-				| HD44780_DISPLAY_ON | HD44780_CURSOR_OFF 
-				| HD44780_CURSOR_NOBLINK);
+LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
+| HD44780_DISPLAY_ON | HD44780_CURSOR_OFF 
+| HD44780_CURSOR_NOBLINK);
 			}
 		}
 			if(btn == 1)	
@@ -252,14 +274,14 @@ else if(menu ==1)
 	{
 	LCD_GoTo(0,1);
 	LCD_WriteText("wyswietl");
-
 		if(isButton())
 		{
 		btn = 2;			
 		delay_ms(1000);
 		messageDisplay();
 		LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
-		| HD44780_DISPLAY_ON | HD44780_CURSOR_OFF 
+		| HD44780_DISPLAY_ON 
+		| HD44780_CURSOR_OFF 
 		| HD44780_CURSOR_NOBLINK);
 		}
 	}
@@ -331,13 +353,8 @@ else if(menu ==1)
 	LCD_WriteText("sw_err");
 	menuEnc = 0;
 	break;
-	}
-}
-}
-}
-
+	}}}}
 \end{lstlisting}
-\columnbreak
 \end{multicols}
 
 \subsection{Plik modułowy morse.c}
@@ -359,7 +376,9 @@ int morseInput[30] ={};
 int morseDecode[30] = {};			
 char encodedMessage[30] = {};		
 
-extern volatile uint16_t Timer1=0, Timer2=0;	
+extern volatile uint16_t 
+Timer1=0,
+Timer2=0;	
 int lcdPos = 0;						
 extern int flag = 0;				
 
@@ -481,7 +500,8 @@ int dial(void)
 		btnFlag = 0;			
 		Timer1 = 0;				
 	}
-	else if(!(PINA & 0x08) && btnFlag == 1 && !Timer1)	
+else 
+if(!(PINA & 0x08) && btnFlag==1&&!Timer1)	
 	{
 		LCD_Clear();
 		userInput[lcdPos] = 'E';	
@@ -535,30 +555,30 @@ void broadcast(int period,int length)
 	for(int i=0;i<length;i++)
 	{
 		int j=0;
-		while(morseTable[userInput[i]-97][j] != 2)
+while(morseTable[userInput[i]-97][j]!=2)
 		{
-			LCD_GoTo(pos,0);
-			if(morseTable[userInput[i]-97][j] == 0)	
-			{										//dot
-				LCD_WriteData('1');
-				morseInput[pos] = 1;
-				blinkLed(period,symbolSpace);
-			}
-			else if(morseTable[userInput[i]-97][j] == 1)	
-			{										//dash
-				LCD_WriteData('0');
-				morseInput[pos] = 0;
-				blinkLed(dashSpace,symbolSpace);
-			}
-			j++;
-			pos++;
+		LCD_GoTo(pos,0);
+if(morseTable[userInput[i]-97][j] == 0)	
+		{										//dot
+			LCD_WriteData('1');
+			morseInput[pos] = 1;
+			blinkLed(period,symbolSpace);
+		}
+else if(morseTable[userInput[i]-97][j]==1)	
+		{										//dash
+			LCD_WriteData('0');
+			morseInput[pos] = 0;
+			blinkLed(dashSpace,symbolSpace);
+		}
+		j++;
+		pos++;
 		}
 		delay_ms(charSpace - period);	
 	}
 	morseInput[pos] = 2;		
 }
 
-int setWpmSpeed()		//change of the wpm speed
+int setWpmSpeed()		
 {
 	wpmSpeed = encoderCount;
 	itoa(wpmSpeed,lcdIntBuffer,10);				
@@ -610,14 +630,20 @@ void LCD_move(char dir)
 {
 	if(dir =='L')				
 	{
-		LCD_WriteCommand(HD44780_DISPLAY_CURSOR_SHIFT|HD44780_SHIFT_DISPLAY|HD44780_SHIFT_RIGHT);
-		LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_OFF | HD44780_CURSOR_NOBLINK);
+LCD_WriteCommand(HD44780_DISPLAY_CURSOR_SHIFT
+|HD44780_SHIFT_DISPLAY|HD44780_SHIFT_RIGHT);
+LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
+| HD44780_DISPLAY_ON | HD44780_CURSOR_OFF 
+| HD44780_CURSOR_NOBLINK);
 		delay_ms(20);
 	}
 	else if(dir =='R')			
 	{
-		LCD_WriteCommand(HD44780_DISPLAY_CURSOR_SHIFT|HD44780_SHIFT_DISPLAY|HD44780_SHIFT_LEFT);
-		LCD_WriteCommand(HD44780_DISPLAY_ONOFF | HD44780_DISPLAY_ON | HD44780_CURSOR_OFF | HD44780_CURSOR_NOBLINK);
+LCD_WriteCommand(HD44780_DISPLAY_CURSOR_SHIFT
+|HD44780_SHIFT_DISPLAY|HD44780_SHIFT_LEFT);
+LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
+| HD44780_DISPLAY_ON | HD44780_CURSOR_OFF 
+| HD44780_CURSOR_NOBLINK);
 		delay_ms(20);
 	}
 }
@@ -710,7 +736,7 @@ ISR(TIMER2_COMP_vect)
 }
 
 \end{lstlisting}
-\columnbreak
+%\columnbreak
 \end{multicols}
 
 \begin{sidewaysfigure}[h!]
