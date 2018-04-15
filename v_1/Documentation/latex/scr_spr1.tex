@@ -1,5 +1,3 @@
-
-
 \documentclass{article}
 
 \usepackage[utf8]{inputenc}		% obsluga jezyka polskiego
@@ -28,18 +26,12 @@
 \renewcommand{\labelitemii}{--}		%
 %\usepackage[export]{adjustbox}
 
-%\title{Laboratorium Sieci Komputerowych SCR \\ Sprawozdanie \\~\\ Temat ćwiczenia: Podstawowe polecenia systemu LINUX \\~\\}
-%\date{10.04.2018}
-%\author{Maciej Mielcarski \\ Paweł Rajkowski}
-
-
-
 \begin{document}
 
-\begin{titlepage} % Suppresses displaying the page number on the title page and the subsequent page counts as page 1
-	\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for horizontal lines, change thickness here
+\begin{titlepage} 
+	\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} 
 	
-	\center % Centre everything on the page
+	\center 
 	
 	%------------------------------------------------
 	%	Headings
@@ -69,7 +61,7 @@
 		\begin{flushleft}
 			\large
 			\textit{Autor:}\\
-			\textsc{Maciej Mielcarski 235703}\\~\\Wydział Elektroniki W-4\\Automatyka i Robotyka % Your name
+			\textsc{Maciej Mielcarski} \\numer albumu: 235703\\~\\Wydział Elektroniki W-4\\Automatyka i Robotyka 
 		\end{flushleft}
 	\end{minipage}
 	~
@@ -77,36 +69,17 @@
 		\begin{flushright}
 			\large
 			\textit{Grupa zajęciowa:}\\
-			\textsc{ŚR TP 13:15} % Supervisor's name
+			\textsc{ŚR TP 13:15} 
 		\end{flushright}
 	\end{minipage}
-	
 
+\vfill\vfill\vfill % Position the date 3/4 down the remaining page
 	
-	% If you don't want a supervisor, uncomment the two lines below and comment the code above
-	%{\large\textit{Author}}\\
-	%John \textsc{Smith} % Your name
-	
-	%------------------------------------------------
-	%	Date
-	%------------------------------------------------
-	
-	%\vfill\vfill\vfill % Position the date 3/4 down the remaining page
-	
-	%{\large\today} % Date, change the \today to a set date if you want to be precise
-	
-	%------------------------------------------------
-	%	Logo
-	%------------------------------------------------
-	
-	%\vfill\vfill
-	%\includegraphics[width=0.2\textwidth]{placeholder.jpg}\\[1cm] % Include a department/university logo - this will require the graphicx package
-	 
-	%----------------------------------------------------------------------------------------
-	
-	%\vfill % Push the date up 1/4 of the remaining page
+	{\large 15.04.2018 wersja projektu 1.0 } % Date, change the \today to a set date if you want to be precise 
 	
 \end{titlepage}
+
+
 
 \pagenumbering{gobble}
 
@@ -268,7 +241,6 @@ LCD_WriteCommand(HD44780_DISPLAY_ONOFF
 				}
 			}
 	break;
-
 	case 1:			
 	if(btn == 0)
 	{
@@ -288,7 +260,6 @@ LCD_WriteCommand(HD44780_DISPLAY_ONOFF
 	if(btn == 2)
 	{
 	LCD_moveMode();
-
 		if(isButton())		
 		{
 		delay_ms(500);
@@ -312,8 +283,7 @@ LCD_WriteCommand(HD44780_DISPLAY_ONOFF
 			}
 		}
 		if(btn == 3)
-		{
-			//messageDecrypt();
+		{	//messageDecrypt();
 			/*if()
 			{
 				while(!(isButton()))
@@ -363,25 +333,20 @@ LCD_WriteCommand(HD44780_DISPLAY_ONOFF
 \lstset{tabsize=1}
 \begin{lstlisting}
 #include "morse.h"
-
 extern int encoderCount = 0;		
 extern uint8_t val=0;				
 extern int asciiNum = 0;			
 extern int wpmSpeed = 10;			
 char lcdIntBuffer[4] = {};			
-
 extern char userInput[30] = {};	
 int morseInput[30] ={};				
-
 int morseDecode[30] = {};			
 char encodedMessage[30] = {};		
-
 extern volatile uint16_t 
 Timer1=0,
 Timer2=0;	
 int lcdPos = 0;						
 extern int flag = 0;				
-
 const uint8_t waitTime = 2;			
 int btnFlag = 0;					
 int encoderTmp = 0;					
@@ -472,7 +437,6 @@ int dial(void)
 		asciiNum = encoderCount+97;					
 		if(asciiNum < 97) 	encoderCount = 25;		
 		if(asciiNum > 122)	encoderCount = 0;		
-
 		LCD_GoTo(lcdPos,0);
 		LCD_WriteData(asciiNum);	
 		LCD_GoTo(lcdPos,1);
@@ -510,12 +474,10 @@ if(!(PINA & 0x08) && btnFlag==1&&!Timer1)
 			LCD_GoTo(i,1);
 			LCD_WriteData(userInput[i]);
 		}
-
 		//LCD_WriteData(lcdPos+48);
 		btnFlag = 0;			
 		delay_ms(1000);
-		broadcast((2400/wpmSpeed),lcdPos);	
-											
+		broadcast((2400/wpmSpeed),lcdPos);						
 		delay_ms(700);
 		btnFlag = 2;			
 	}
@@ -537,21 +499,16 @@ if(!(PINA & 0x08) && btnFlag==1&&!Timer1)
 			btnFlag = 0;
 			return 1;
 		}
-
-
 	}
 return 0;
 }
-
 void broadcast(int period,int length)
 {
 	int symbolSpace = period;
 	int dashSpace = period*3;
 	int charSpace = period*3;
 	int wordSpace = period*7;
-
 	int pos=0;
-	
 	for(int i=0;i<length;i++)
 	{
 		int j=0;
@@ -586,7 +543,6 @@ int setWpmSpeed()
 	LCD_WriteText("WPM:    ");
 	LCD_GoTo(0,1);
 	LCD_WriteText(lcdIntBuffer);
-	
 	if(isButton())
 	{
 		encoderCount = 0;
@@ -600,7 +556,6 @@ void messageDisplay()
 {						
 	LCD_clearLine(0);
 	LCD_clearLine(1);
-	
 	if(userInput[0] < 97 || userInput[0] > 122)
 	{								
 		LCD_Home();					
@@ -609,7 +564,6 @@ void messageDisplay()
 		LCD_WriteText("danych");
 		return;
 	}
-
 	int j = 0;
 	while(morseInput[j] != 2)	
 	{							
@@ -688,8 +642,7 @@ int isButton()
 {
 	if(!(PINA & 0x08))
 		return 1;
-	else
-		return 0;
+	else	return 0;
 }
 
 uint8_t readEncoder(void)	
@@ -701,7 +654,6 @@ uint8_t readEncoder(void)
 
   if(!bit_is_clear(PINA, ENC_A))
 	val |= (1<<0);
-
   return val;
 }
 
@@ -728,7 +680,6 @@ void readEncoderCounter ()
 ISR(TIMER2_COMP_vect)	
 {
 	uint16_t n;
-
 	n = Timer1;		
 	if (n) Timer1 = --n;
 	n = Timer2;		
@@ -738,6 +689,20 @@ ISR(TIMER2_COMP_vect)
 \end{lstlisting}
 %\columnbreak
 \end{multicols}
+
+\section{Dalszy rozwój projektu}
+Mimo sprawnej realizacji większości planowanych funkcji urządzenia, układ daleki jest od finalnej wersji. Po skonstruowaniu i przetestowaniu podstawowych czynności, układ jest gotowy do implementacji kolejnych etapów rozwoju, m.in.:
+	\begin{itemize}
+	\item dokończenie pracy nad funkcją rozszyfrowywania wiadomości
+	
+	\item przerojektowanie programu w celu zaimplementowania obiektów, takich jak przyciski, enkoder, opcje menu jako struktury (stworzenie szablonów do elementów wykonawczych, znacząco ułatwiło by to budowę kolejnych projektów)
+	
+	\item wprowadzenie możliwości nadawania paru wyrazów, trwałego zapisywania wiadomości oraz zapętlania przekazu	
+	
+	\item zaprojektowanie płytki drukowanej PCB wraz z obsługą zasilania baterią Li-Ion
+	
+	\item przebudowanie całości projektu do formy poręcznej latarki
+	\end{itemize}
 
 \begin{sidewaysfigure}[h!]
 	\centering
