@@ -1,0 +1,142 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c+cp}{\PYGZsh{}include} \PYG{c+cpf}{\PYGZdq{}morse.h\PYGZdq{}}
+
+\PYG{k+kt}{int} \PYG{n+nf}{main}\PYG{p}{(}\PYG{k+kt}{void}\PYG{p}{)\PYGZob{}}
+	\PYG{k+kt}{int} \PYG{n}{menu} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+	\PYG{k+kt}{int} \PYG{n}{btn} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+	\PYG{k+kt}{int} \PYG{n}{menuEnc} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+\PYG{n}{initializeSetup}\PYG{p}{();}
+\PYG{k}{while}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{)}
+\PYG{p}{\PYGZob{}}
+	\PYG{n}{readEncoderCounter}\PYG{p}{();}
+\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{)}
+\PYG{p}{\PYGZob{}}
+	\PYG{k}{if}\PYG{p}{(}\PYG{n}{encoderCount} \PYG{o}{\PYGZlt{}} \PYG{l+m+mi}{0}\PYG{p}{)} \PYG{n}{encoderCount} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+	\PYG{k}{if}\PYG{p}{(}\PYG{n}{encoderCount} \PYG{o}{\PYGZgt{}} \PYG{l+m+mi}{3}\PYG{p}{)} \PYG{n}{encoderCount} \PYG{o}{=} \PYG{l+m+mi}{3}\PYG{p}{;}
+	\PYG{n}{menuEnc} \PYG{o}{=} \PYG{n}{encoderCount}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+\PYG{k}{if}\PYG{p}{(}\PYG{n}{menu} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{)}
+\PYG{p}{\PYGZob{}}
+	\PYG{n}{LCD\PYGZus{}Home}\PYG{p}{();}
+	\PYG{n}{LCD\PYGZus{}WriteText}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}Opcje:  \PYGZdq{}}\PYG{p}{);}
+	\PYG{n}{LCD\PYGZus{}GoTo}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{);}
+	\PYG{n}{LCD\PYGZus{}WriteText}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}Nadaj   \PYGZdq{}}\PYG{p}{);}
+	\PYG{n}{menu}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+\PYG{k}{else} \PYG{k}{if}\PYG{p}{(}\PYG{n}{menu} \PYG{o}{==}\PYG{l+m+mi}{1}\PYG{p}{)}
+\PYG{p}{\PYGZob{}}
+	\PYG{k}{switch} \PYG{p}{(}\PYG{n}{menuEnc}\PYG{p}{)}
+	\PYG{p}{\PYGZob{}}
+	\PYG{k}{case} \PYG{l+m+mi}{0}\PYG{o}{:}
+		\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{)}
+		\PYG{p}{\PYGZob{}}
+		\PYG{n}{LCD\PYGZus{}GoTo}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{);}
+		\PYG{n}{LCD\PYGZus{}WriteText}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}nadaj   \PYGZdq{}}\PYG{p}{);}
+
+			\PYG{k}{if}\PYG{p}{(}\PYG{n}{isButton}\PYG{p}{())}
+			\PYG{p}{\PYGZob{}}
+				\PYG{n}{btn} \PYG{o}{=} \PYG{l+m+mi}{1}\PYG{p}{;}
+				\PYG{n}{LCD\PYGZus{}Clear}\PYG{p}{();}
+				\PYG{n}{encoderCount}\PYG{o}{=}\PYG{l+m+mi}{0}\PYG{p}{;}
+				\PYG{n}{delay\PYGZus{}ms}\PYG{p}{(}\PYG{l+m+mi}{800}\PYG{p}{);}
+\PYG{n}{LCD\PYGZus{}WriteCommand}\PYG{p}{(}
+\PYG{n}{HD44780\PYGZus{}DISPLAY\PYGZus{}ONOFF}
+\PYG{o}{|} \PYG{n}{HD44780\PYGZus{}DISPLAY\PYGZus{}ON}
+\PYG{o}{|} \PYG{n}{HD44780\PYGZus{}CURSOR\PYGZus{}OFF}
+\PYG{o}{|} \PYG{n}{HD44780\PYGZus{}CURSOR\PYGZus{}NOBLINK}\PYG{p}{);}
+			\PYG{p}{\PYGZcb{}}
+		\PYG{p}{\PYGZcb{}}
+			\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{1}\PYG{p}{)}
+			\PYG{p}{\PYGZob{}}
+				\PYG{k}{if}\PYG{p}{(}\PYG{n}{dial}\PYG{p}{())}
+				\PYG{p}{\PYGZob{}}
+				\PYG{n}{btn} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+				\PYG{n}{menu} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+				\PYG{p}{\PYGZcb{}}
+			\PYG{p}{\PYGZcb{}}
+	\PYG{k}{break}\PYG{p}{;}
+	\PYG{k}{case} \PYG{l+m+mi}{1}\PYG{o}{:}
+	\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{)}
+	\PYG{p}{\PYGZob{}}
+	\PYG{n}{LCD\PYGZus{}GoTo}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{);}
+	\PYG{n}{LCD\PYGZus{}WriteText}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}wyswietl\PYGZdq{}}\PYG{p}{);}
+		\PYG{k}{if}\PYG{p}{(}\PYG{n}{isButton}\PYG{p}{())}
+		\PYG{p}{\PYGZob{}}
+		\PYG{n}{btn} \PYG{o}{=} \PYG{l+m+mi}{2}\PYG{p}{;}
+		\PYG{n}{delay\PYGZus{}ms}\PYG{p}{(}\PYG{l+m+mi}{1000}\PYG{p}{);}
+		\PYG{n}{messageDisplay}\PYG{p}{();}
+		\PYG{n}{LCD\PYGZus{}WriteCommand}\PYG{p}{(}
+		\PYG{n}{HD44780\PYGZus{}DISPLAY\PYGZus{}ONOFF}
+		\PYG{o}{|} \PYG{n}{HD44780\PYGZus{}DISPLAY\PYGZus{}ON}
+		\PYG{o}{|} \PYG{n}{HD44780\PYGZus{}CURSOR\PYGZus{}OFF}
+		\PYG{o}{|} \PYG{n}{HD44780\PYGZus{}CURSOR\PYGZus{}NOBLINK}\PYG{p}{);}
+		\PYG{p}{\PYGZcb{}}
+	\PYG{p}{\PYGZcb{}}
+	\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{2}\PYG{p}{)}
+	\PYG{p}{\PYGZob{}}
+	\PYG{n}{LCD\PYGZus{}moveMode}\PYG{p}{();}
+		\PYG{k}{if}\PYG{p}{(}\PYG{n}{isButton}\PYG{p}{())}
+		\PYG{p}{\PYGZob{}}
+		\PYG{n}{delay\PYGZus{}ms}\PYG{p}{(}\PYG{l+m+mi}{500}\PYG{p}{);}
+		\PYG{n}{btn} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+		\PYG{n}{menu} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+		\PYG{p}{\PYGZcb{}}
+	\PYG{p}{\PYGZcb{}}
+	\PYG{k}{break}\PYG{p}{;}
+		\PYG{k}{case} \PYG{l+m+mi}{2}\PYG{o}{:}
+		\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{)}
+		\PYG{p}{\PYGZob{}}
+		\PYG{n}{LCD\PYGZus{}GoTo}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{);}
+		\PYG{n}{LCD\PYGZus{}WriteText}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}rozszyf.\PYGZdq{}}\PYG{p}{);}
+
+			\PYG{k}{if}\PYG{p}{(}\PYG{n}{isButton}\PYG{p}{())}
+			\PYG{p}{\PYGZob{}}
+			\PYG{n}{btn} \PYG{o}{=} \PYG{l+m+mi}{3}\PYG{p}{;}
+			\PYG{n}{LCD\PYGZus{}Clear}\PYG{p}{();}
+			\PYG{n}{delay\PYGZus{}ms}\PYG{p}{(}\PYG{l+m+mi}{600}\PYG{p}{);}
+			\PYG{n}{encoderCount} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+			\PYG{p}{\PYGZcb{}}
+		\PYG{p}{\PYGZcb{}}
+		\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{3}\PYG{p}{)}
+		\PYG{p}{\PYGZob{}}	\PYG{c+c1}{//messageDecrypt();}
+			\PYG{c+cm}{/*if()}
+\PYG{c+cm}{			\PYGZob{}}
+\PYG{c+cm}{				while(!(isButton()))}
+\PYG{c+cm}{				\PYGZob{}}
+\PYG{c+cm}{					LCD\PYGZus{}moveMode();}
+\PYG{c+cm}{				\PYGZcb{}}
+\PYG{c+cm}{			delay\PYGZus{}ms(500);}
+\PYG{c+cm}{			btn = 0;}
+\PYG{c+cm}{			menu = 0;*/}
+		\PYG{p}{\PYGZcb{}}
+	\PYG{k}{break}\PYG{p}{;}
+		\PYG{k}{case} \PYG{l+m+mi}{3}\PYG{o}{:}
+		\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{)}
+		\PYG{p}{\PYGZob{}}
+		\PYG{n}{LCD\PYGZus{}GoTo}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{);}
+		\PYG{n}{LCD\PYGZus{}WriteText}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}predkosc\PYGZdq{}}\PYG{p}{);}
+
+			\PYG{k}{if}\PYG{p}{(}\PYG{n}{isButton}\PYG{p}{())}
+			\PYG{p}{\PYGZob{}}
+			\PYG{n}{btn} \PYG{o}{=} \PYG{l+m+mi}{4}\PYG{p}{;}
+			\PYG{n}{LCD\PYGZus{}Clear}\PYG{p}{();}
+			\PYG{n}{delay\PYGZus{}ms}\PYG{p}{(}\PYG{l+m+mi}{600}\PYG{p}{);}
+			\PYG{n}{encoderCount} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+			\PYG{p}{\PYGZcb{}}
+		\PYG{p}{\PYGZcb{}}
+		\PYG{k}{if}\PYG{p}{(}\PYG{n}{btn} \PYG{o}{==} \PYG{l+m+mi}{4}\PYG{p}{)}
+		\PYG{p}{\PYGZob{}}
+			\PYG{k}{if}\PYG{p}{(}\PYG{n}{setWpmSpeed}\PYG{p}{())}
+			\PYG{p}{\PYGZob{}}
+			\PYG{n}{btn} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+			\PYG{n}{menu} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+			\PYG{p}{\PYGZcb{}}
+		\PYG{p}{\PYGZcb{}}
+	\PYG{k}{break}\PYG{p}{;}
+		\PYG{k}{default}\PYG{o}{:}
+	\PYG{n}{LCD\PYGZus{}GoTo}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{);}
+	\PYG{n}{LCD\PYGZus{}WriteText}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}sw\PYGZus{}err\PYGZdq{}}\PYG{p}{);}
+	\PYG{n}{menuEnc} \PYG{o}{=} \PYG{l+m+mi}{0}\PYG{p}{;}
+	\PYG{k}{break}\PYG{p}{;}
+	\PYG{p}{\PYGZcb{}\PYGZcb{}\PYGZcb{}\PYGZcb{}}
+\end{Verbatim}

@@ -1,4 +1,4 @@
-update=Tue 10 Apr 2018 19:28:51 CEST
+update=Tue 15 May 2018 10:35:19 PM CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -25,6 +25,16 @@ version=1
 NetIExt=net
 [general]
 version=1
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
 [eeschema]
 version=1
 LibDir=D:/Programy/KiCad/share/kicad/custom;D:/Programy/KiCad/zebrane_symbole;D:/Programy/KiCad/share/kicad/custom/elem_stykowe;D:/Programy/KiCad/lib/lib_warsztaty
@@ -60,13 +70,3 @@ LibName28=atmel
 LibName29=contrib
 LibName30=valves
 LibName31=D:/Programy/KiCad/share/kicad/custom/pin_array_7x2
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=
-SpiceForceRefPrefix=0
-SpiceUseNetNumbers=0
-LabSize=60

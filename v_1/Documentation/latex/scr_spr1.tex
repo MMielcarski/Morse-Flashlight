@@ -21,6 +21,7 @@
     backgroundcolor=\color{black!5}, % set backgroundcolor		%
     basicstyle=\footnotesize,% basic font setting				%
 }																%
+\usepackage{minted}												% obsluga wyswietlania kodu z kolorami
 
 \renewcommand{\labelitemi}{--}			%zmiana wygladu znacznikow wypunktowania
 \renewcommand{\labelitemii}{--}		%
@@ -49,7 +50,7 @@
 	
 	\HRule\\[0.4cm]
 	
-	{\huge\bfseries Nadajnik optyczny sygnału Morse'a}\\[0.4cm] % Title of your document
+	{\huge\bfseries Nadajnik optycznddy sygnału Morse'a}\\[0.4cm] % Title of your document
 	
 	\HRule\\[1.5cm]
 	
@@ -185,8 +186,9 @@ Za pomocą tej opcji możemy dostosować prędkość wyświetlanej przez nas wia
 
 \subsection{Główny pilk modułowy main.c}
 \begin{multicols}{2}
-\lstset{tabsize=1}
-\begin{lstlisting}
+%\lstset{tabsize=1}
+%\begin{lstlisting}
+\begin{minted}[tabsize=2,obeytabs]{c}
 #include "morse.h"
 
 int main(void){
@@ -227,8 +229,10 @@ else if(menu ==1)
 				LCD_Clear();
 				encoderCount=0;
 				delay_ms(800);
-LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
-| HD44780_DISPLAY_ON | HD44780_CURSOR_OFF 
+LCD_WriteCommand(
+HD44780_DISPLAY_ONOFF 
+| HD44780_DISPLAY_ON 
+| HD44780_CURSOR_OFF 
 | HD44780_CURSOR_NOBLINK);
 			}
 		}
@@ -251,7 +255,8 @@ LCD_WriteCommand(HD44780_DISPLAY_ONOFF
 		btn = 2;			
 		delay_ms(1000);
 		messageDisplay();
-		LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
+		LCD_WriteCommand(
+		HD44780_DISPLAY_ONOFF 
 		| HD44780_DISPLAY_ON 
 		| HD44780_CURSOR_OFF 
 		| HD44780_CURSOR_NOBLINK);
@@ -324,14 +329,17 @@ LCD_WriteCommand(HD44780_DISPLAY_ONOFF
 	menuEnc = 0;
 	break;
 	}}}}
-\end{lstlisting}
+
+\end{minted}
+%\end{lstlisting}
 \end{multicols}
 
 \subsection{Plik modułowy morse.c}
 
 \begin{multicols}{2}
-\lstset{tabsize=1}
-\begin{lstlisting}
+%\lstset{tabsize=1}
+%\begin{lstlisting}
+\begin{minted}[tabsize=2,obeytabs]{c}
 #include "morse.h"
 extern int encoderCount = 0;		
 extern uint8_t val=0;				
@@ -556,7 +564,8 @@ void messageDisplay()
 {						
 	LCD_clearLine(0);
 	LCD_clearLine(1);
-	if(userInput[0] < 97 || userInput[0] > 122)
+	if(userInput[0] < 97 
+	|| userInput[0] > 122)
 	{								
 		LCD_Home();					
 		LCD_WriteText("brak");
@@ -584,19 +593,27 @@ void LCD_move(char dir)
 {
 	if(dir =='L')				
 	{
-LCD_WriteCommand(HD44780_DISPLAY_CURSOR_SHIFT
-|HD44780_SHIFT_DISPLAY|HD44780_SHIFT_RIGHT);
-LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
-| HD44780_DISPLAY_ON | HD44780_CURSOR_OFF 
+LCD_WriteCommand(
+HD44780_DISPLAY_CURSOR_SHIFT
+|HD44780_SHIFT_DISPLAY
+|HD44780_SHIFT_RIGHT);
+LCD_WriteCommand(
+HD44780_DISPLAY_ONOFF 
+| HD44780_DISPLAY_ON 
+| HD44780_CURSOR_OFF 
 | HD44780_CURSOR_NOBLINK);
 		delay_ms(20);
 	}
 	else if(dir =='R')			
 	{
-LCD_WriteCommand(HD44780_DISPLAY_CURSOR_SHIFT
-|HD44780_SHIFT_DISPLAY|HD44780_SHIFT_LEFT);
-LCD_WriteCommand(HD44780_DISPLAY_ONOFF 
-| HD44780_DISPLAY_ON | HD44780_CURSOR_OFF 
+LCD_WriteCommand(
+HD44780_DISPLAY_CURSOR_SHIFT
+|HD44780_SHIFT_DISPLAY
+|HD44780_SHIFT_LEFT);
+LCD_WriteCommand(
+HD44780_DISPLAY_ONOFF 
+| HD44780_DISPLAY_ON 
+| HD44780_CURSOR_OFF 
 | HD44780_CURSOR_NOBLINK);
 		delay_ms(20);
 	}
@@ -685,8 +702,8 @@ ISR(TIMER2_COMP_vect)
 	n = Timer2;		
 	if (n) Timer2 = --n;
 }
-
-\end{lstlisting}
+\end{minted}
+%\end{lstlisting}
 %\columnbreak
 \end{multicols}
 
