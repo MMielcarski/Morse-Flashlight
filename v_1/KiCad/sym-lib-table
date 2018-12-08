@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name latarka_1-rescue)(type Legacy)(uri ${KIPRJMOD}/latarka_1-rescue.lib)(options "")(descr ""))
+)

@@ -1,7 +1,6 @@
-EESchema Schematic File Version 2
-LIBS:latarka_1-rescue
+EESchema Schematic File Version 4
 LIBS:latarka_1-cache
-EELAYER 25 0
+EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -16,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L ATMEGA32-16PU U?
+L atmel:ATMEGA32-16PU U?
 U 1 1 5AA82DC9
 P 3040 3410
 F 0 "U?" H 2190 5290 50  0000 L BNN
@@ -27,7 +26,7 @@ F 3 "" H 3040 3410 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L POT RV?
+L device:POT RV?
 U 1 1 5AA83564
 P 5310 2650
 F 0 "RV?" V 5135 2650 50  0000 C CNN
@@ -38,7 +37,7 @@ F 3 "" H 5310 2650 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA838CA
 P 4960 2500
 F 0 "#PWR?" H 4960 2250 50  0001 C CNN
@@ -49,7 +48,7 @@ F 3 "" H 4960 2500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA838EE
 P 4960 2880
 F 0 "#PWR?" H 4960 2730 50  0001 C CNN
@@ -62,7 +61,7 @@ $EndComp
 Text GLabel 5790 2440 3    60   Input ~ 0
 PC0_RS
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA83B1E
 P 5890 2850
 F 0 "#PWR?" H 5890 2600 50  0001 C CNN
@@ -89,7 +88,7 @@ PD4_ENC6
 Text GLabel 6790 2440 3    60   Input ~ 0
 PD3_ENC7
 $Comp
-L AVR-ISP-10 CON?
+L atmel:AVR-ISP-10 CON?
 U 1 1 5AA83F98
 P 6350 3610
 F 0 "CON?" H 6180 3940 50  0000 C CNN
@@ -100,7 +99,7 @@ F 3 "" H 6350 3610 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA84007
 P 6780 3610
 F 0 "#PWR?" H 6780 3360 50  0001 C CNN
@@ -111,7 +110,7 @@ F 3 "" H 6780 3610 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA84123
 P 7380 3410
 F 0 "#PWR?" H 7380 3260 50  0001 C CNN
@@ -139,7 +138,7 @@ SCK_PB7
 Text GLabel 4040 3210 2    60   Input ~ 0
 MISO_PB6
 $Comp
-L SW_PUSH SW?
+L latarka_1-rescue:SW_PUSH SW?
 U 1 1 5AA83B8B
 P 1740 1710
 F 0 "SW?" H 1890 1820 50  0000 C CNN
@@ -150,7 +149,7 @@ F 3 "" H 1740 1710 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R?
+L device:R R?
 U 1 1 5AA83DA2
 P 1790 1180
 F 0 "R?" V 1870 1180 50  0000 C CNN
@@ -161,7 +160,7 @@ F 3 "" H 1790 1180 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA84075
 P 1640 1090
 F 0 "#PWR?" H 1640 940 50  0001 C CNN
@@ -172,7 +171,7 @@ F 3 "" H 1640 1090 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA840F8
 P 1440 1710
 F 0 "#PWR?" H 1440 1460 50  0001 C CNN
@@ -189,10 +188,10 @@ Wire Wire Line
 Wire Wire Line
 	5490 2500 5490 2440
 Wire Wire Line
-	4960 2500 5490 2500
+	4960 2500 5310 2500
 Connection ~ 5310 2500
 Wire Wire Line
-	4960 2880 5590 2880
+	4960 2880 5310 2880
 Wire Wire Line
 	5310 2880 5310 2800
 Wire Wire Line
@@ -203,7 +202,7 @@ Wire Wire Line
 Wire Wire Line
 	6780 3610 6400 3610
 Wire Wire Line
-	6400 3510 6400 3810
+	6400 3510 6400 3610
 Connection ~ 6400 3610
 Connection ~ 6400 3710
 Wire Wire Line
@@ -217,11 +216,11 @@ Wire Wire Line
 Wire Wire Line
 	5750 3810 6150 3810
 Wire Wire Line
-	2020 1180 2020 1710
+	2020 1180 2020 1440
 Wire Wire Line
 	1640 1090 1640 1180
 $Comp
-L Rotary_Encoder_Switch SW?
+L device:Rotary_Encoder_Switch SW?
 U 1 1 5AA85E3D
 P 6490 4740
 F 0 "SW?" H 6490 5000 50  0000 C CNN
@@ -232,7 +231,7 @@ F 3 "" H 6490 5000 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R?
+L device:R R?
 U 1 1 5AA86123
 P 6040 4440
 F 0 "R?" V 6120 4440 50  0000 C CNN
@@ -243,7 +242,7 @@ F 3 "" H 6040 4440 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L R R?
+L device:R R?
 U 1 1 5AA861E4
 P 6040 5040
 F 0 "R?" V 6120 5040 50  0000 C CNN
@@ -254,7 +253,7 @@ F 3 "" H 6040 5040 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA86294
 P 5590 4590
 F 0 "C?" H 5615 4690 50  0000 L CNN
@@ -265,7 +264,7 @@ F 3 "" H 5590 4590 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA86347
 P 5590 4890
 F 0 "C?" H 5615 4990 50  0000 L CNN
@@ -276,10 +275,10 @@ F 3 "" H 5590 4890 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5250 4740 6190 4740
+	5250 4740 5590 4740
 Connection ~ 5590 4740
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA866EC
 P 5250 4740
 F 0 "#PWR?" H 5250 4490 50  0001 C CNN
@@ -302,7 +301,7 @@ PA1_encA
 Text GLabel 5590 5040 0    60   Input ~ 0
 PA2_encB
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA875B9
 P 7280 4790
 F 0 "C?" H 7305 4890 50  0000 L CNN
@@ -313,7 +312,7 @@ F 3 "" H 7280 4790 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L R R?
+L device:R R?
 U 1 1 5AA879DC
 P 7280 4490
 F 0 "R?" V 7360 4490 50  0000 C CNN
@@ -324,7 +323,7 @@ F 3 "" H 7280 4490 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA879E2
 P 7280 4340
 F 0 "#PWR?" H 7280 4190 50  0001 C CNN
@@ -337,13 +336,13 @@ $EndComp
 Text GLabel 7490 4640 2    60   Input ~ 0
 PA3_encSW
 Wire Wire Line
-	6790 4640 7490 4640
+	6790 4640 7280 4640
 Wire Wire Line
 	7280 4940 6790 4940
 Wire Wire Line
 	6790 4940 6790 4840
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA885E7
 P 7280 4940
 F 0 "#PWR?" H 7280 4690 50  0001 C CNN
@@ -355,7 +354,7 @@ F 3 "" H 7280 4940 50  0001 C CNN
 $EndComp
 Connection ~ 7280 4640
 $Comp
-L LCD8X2 DS?
+L latarka_1-rescue:LCD8X2 DS?
 U 1 1 5AA89242
 P 6240 1940
 F 0 "DS?" H 5440 2340 50  0000 C CNN
@@ -366,7 +365,7 @@ F 3 "" H 6240 1940 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L LED D?
+L device:LED D?
 U 1 1 5AA89639
 P 8840 2250
 F 0 "D?" H 8840 2350 50  0000 C CNN
@@ -377,7 +376,7 @@ F 3 "" H 8840 2250 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L LED D?
+L device:LED D?
 U 1 1 5AA8976E
 P 8840 2520
 F 0 "D?" H 8840 2620 50  0000 C CNN
@@ -388,7 +387,7 @@ F 3 "" H 8840 2520 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L LED D?
+L device:LED D?
 U 1 1 5AA89935
 P 8840 2810
 F 0 "D?" H 8840 2910 50  0000 C CNN
@@ -399,7 +398,7 @@ F 3 "" H 8840 2810 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L LED D?
+L device:LED D?
 U 1 1 5AA8993B
 P 8840 3080
 F 0 "D?" H 8840 3180 50  0000 C CNN
@@ -410,11 +409,11 @@ F 3 "" H 8840 3080 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	8990 2250 8990 3220
+	8990 2250 8990 2520
 Connection ~ 8990 2520
 Connection ~ 8990 2810
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA89B27
 P 8990 3220
 F 0 "#PWR?" H 8990 2970 50  0001 C CNN
@@ -426,7 +425,7 @@ F 3 "" H 8990 3220 50  0001 C CNN
 $EndComp
 Connection ~ 8990 3080
 $Comp
-L R R?
+L device:R R?
 U 1 1 5AA89C72
 P 7960 2880
 F 0 "R?" V 8040 2880 50  0000 C CNN
@@ -437,7 +436,7 @@ F 3 "" H 7960 2880 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L 2N2219 Q?
+L transistors:2N2219 Q?
 U 1 1 5AA89D01
 P 8310 2880
 F 0 "Q?" H 8170 3010 50  0000 L CNN
@@ -450,7 +449,7 @@ $EndComp
 Text GLabel 7810 2880 0    60   Input ~ 0
 PC4_LED
 $Comp
-L R R?
+L device:R R?
 U 1 1 5AA8A277
 P 8410 2530
 F 0 "R?" V 8490 2530 50  0000 C CNN
@@ -461,7 +460,7 @@ F 3 "" H 8410 2530 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA8A3DB
 P 8410 2380
 F 0 "#PWR?" H 8410 2230 50  0001 C CNN
@@ -472,13 +471,13 @@ F 3 "" H 8410 2380 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8690 2250 8690 3080
+	8690 2250 8690 2520
 Connection ~ 8690 2520
 Connection ~ 8690 2810
 Wire Wire Line
 	8690 3080 8410 3080
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA8B531
 P 2740 1240
 F 0 "C?" V 2790 1320 50  0000 L CNN
@@ -489,7 +488,7 @@ F 3 "" H 2740 1240 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA8B8AB
 P 2590 1240
 F 0 "#PWR?" H 2590 990 50  0001 C CNN
@@ -500,9 +499,9 @@ F 3 "" H 2590 1240 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2890 1060 2890 1410
+	2890 1060 2890 1240
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA8B97D
 P 2890 1060
 F 0 "#PWR?" H 2890 910 50  0001 C CNN
@@ -514,7 +513,7 @@ F 3 "" H 2890 1060 50  0001 C CNN
 $EndComp
 Connection ~ 2890 1240
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA8BC52
 P 3040 5410
 F 0 "#PWR?" H 3040 5160 50  0001 C CNN
@@ -525,10 +524,10 @@ F 3 "" H 3040 5410 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2990 5410 3090 5410
+	2990 5410 3040 5410
 Connection ~ 3040 5410
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA8BFF4
 P 3340 1240
 F 0 "C?" V 3390 1320 50  0000 L CNN
@@ -539,7 +538,7 @@ F 3 "" H 3340 1240 50  0001 C CNN
 	0    1    -1   0   
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA8BFFA
 P 3490 1240
 F 0 "#PWR?" H 3490 990 50  0001 C CNN
@@ -550,9 +549,9 @@ F 3 "" H 3490 1240 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	3190 1060 3190 1410
+	3190 1060 3190 1240
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA8C001
 P 3190 1060
 F 0 "#PWR?" H 3190 910 50  0001 C CNN
@@ -564,7 +563,7 @@ F 3 "" H 3190 1060 50  0001 C CNN
 $EndComp
 Connection ~ 3190 1240
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA8C8A2
 P 1870 3060
 F 0 "C?" V 1920 3140 50  0000 L CNN
@@ -575,7 +574,7 @@ F 3 "" H 1870 3060 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA8C8A8
 P 1870 3210
 F 0 "#PWR?" H 1870 2960 50  0001 C CNN
@@ -586,9 +585,9 @@ F 3 "" H 1870 3210 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1690 2910 2040 2910
+	1690 2910 1870 2910
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA8C8AF
 P 1690 2910
 F 0 "#PWR?" H 1690 2760 50  0001 C CNN
@@ -612,7 +611,7 @@ NoConn ~ 4040 1710
 NoConn ~ 2040 2110
 NoConn ~ 2040 2510
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA8EAF4
 P 1590 1440
 F 0 "C?" H 1615 1540 50  0000 L CNN
@@ -630,7 +629,7 @@ Wire Wire Line
 	1740 1440 2020 1440
 Connection ~ 2020 1440
 $Comp
-L SW_PUSH SW?
+L latarka_1-rescue:SW_PUSH SW?
 U 1 1 5AA937C3
 P 8940 4000
 F 0 "SW?" H 9090 4110 50  0000 C CNN
@@ -641,7 +640,7 @@ F 3 "" H 8940 4000 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R?
+L device:R R?
 U 1 1 5AA937C9
 P 9240 3580
 F 0 "R?" V 9320 3580 50  0000 C CNN
@@ -652,7 +651,7 @@ F 3 "" H 9240 3580 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA937CF
 P 9240 3430
 F 0 "#PWR?" H 9240 3280 50  0001 C CNN
@@ -663,7 +662,7 @@ F 3 "" H 9240 3430 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA937D5
 P 8640 4000
 F 0 "#PWR?" H 8640 3750 50  0001 C CNN
@@ -674,7 +673,7 @@ F 3 "" H 8640 4000 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA937DD
 P 8790 3730
 F 0 "C?" H 8815 3830 50  0000 L CNN
@@ -688,11 +687,10 @@ Wire Wire Line
 	8640 3730 8640 4000
 Wire Wire Line
 	8940 3730 9240 3730
-Connection ~ 2020 1710
 Wire Wire Line
 	9240 3730 9240 4000
 $Comp
-L SW_PUSH SW?
+L latarka_1-rescue:SW_PUSH SW?
 U 1 1 5AA95DC9
 P 8940 5010
 F 0 "SW?" H 9090 5120 50  0000 C CNN
@@ -703,7 +701,7 @@ F 3 "" H 8940 5010 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R R?
+L device:R R?
 U 1 1 5AA95DCF
 P 9240 4590
 F 0 "R?" V 9320 4590 50  0000 C CNN
@@ -714,7 +712,7 @@ F 3 "" H 9240 4590 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA95DD5
 P 9240 4440
 F 0 "#PWR?" H 9240 4290 50  0001 C CNN
@@ -725,7 +723,7 @@ F 3 "" H 9240 4440 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA95DDB
 P 8640 5010
 F 0 "#PWR?" H 8640 4760 50  0001 C CNN
@@ -736,7 +734,7 @@ F 3 "" H 8640 5010 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L C C?
+L device:C C?
 U 1 1 5AA95DE1
 P 8790 4740
 F 0 "C?" H 8815 4840 50  0000 L CNN
@@ -757,7 +755,7 @@ PC1_SW1
 Text GLabel 9240 5010 2    60   Input ~ 0
 PC2_SW2
 $Comp
-L SW_PUSH SW?
+L latarka_1-rescue:SW_PUSH SW?
 U 1 1 5AA97EA8
 P 7080 3410
 F 0 "SW?" H 6960 3530 50  0000 C CNN
@@ -768,7 +766,7 @@ F 3 "" H 7080 3410 50  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L PWR_FLAG #FLG?
+L power:PWR_FLAG #FLG?
 U 1 1 5AA98338
 P 7830 1640
 F 0 "#FLG?" H 7830 1715 50  0001 C CNN
@@ -779,7 +777,7 @@ F 3 "" H 7830 1640 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L PWR_FLAG #FLG?
+L power:PWR_FLAG #FLG?
 U 1 1 5AA984DD
 P 8240 1640
 F 0 "#FLG?" H 8240 1715 50  0001 C CNN
@@ -790,7 +788,7 @@ F 3 "" H 8240 1640 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L +5V #PWR?
+L power:+5V #PWR?
 U 1 1 5AA98528
 P 7830 1640
 F 0 "#PWR?" H 7830 1490 50  0001 C CNN
@@ -801,7 +799,7 @@ F 3 "" H 7830 1640 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L GND #PWR?
+L power:GND #PWR?
 U 1 1 5AA9857F
 P 8240 1640
 F 0 "#PWR?" H 8240 1390 50  0001 C CNN
@@ -840,4 +838,36 @@ NoConn ~ 4040 2910
 NoConn ~ 4040 4410
 NoConn ~ 4040 4510
 NoConn ~ 4040 4610
+Wire Wire Line
+	5310 2500 5490 2500
+Wire Wire Line
+	5310 2880 5590 2880
+Wire Wire Line
+	6400 3610 6400 3710
+Wire Wire Line
+	6400 3710 6400 3810
+Wire Wire Line
+	5590 4740 6190 4740
+Wire Wire Line
+	7280 4640 7490 4640
+Wire Wire Line
+	8990 2520 8990 2810
+Wire Wire Line
+	8990 2810 8990 3080
+Wire Wire Line
+	8990 3080 8990 3220
+Wire Wire Line
+	8690 2520 8690 2810
+Wire Wire Line
+	8690 2810 8690 3080
+Wire Wire Line
+	2890 1240 2890 1410
+Wire Wire Line
+	3040 5410 3090 5410
+Wire Wire Line
+	3190 1240 3190 1410
+Wire Wire Line
+	1870 2910 2040 2910
+Wire Wire Line
+	2020 1440 2020 1710
 $EndSCHEMATC
