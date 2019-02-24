@@ -1,4 +1,4 @@
-update=sob, 15 gru 2018, 21:41:10
+update=nie, 24 lut 2019, 21:02:53
 version=1
 last_client=kicad
 [general]
@@ -12,10 +12,20 @@ NetIExt=net
 version=1
 LibDir=
 [eeschema/libraries]
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceAjustPassiveValues=0
+LabSize=50
+ERC_TestSimilarLabels=1
 [pcbnew]
 version=1
 PageLayoutDescrFile=
-LastNetListRead=netlists/morse-torch_v2_alfa_2.net
+LastNetListRead=netlists/morse-torch_v2_alfa_3.net
 PadDrill=0.762
 PadDrillOvalY=0.762
 PadSizeH=1.524
